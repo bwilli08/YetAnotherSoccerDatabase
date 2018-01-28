@@ -19,30 +19,21 @@ CREATE TABLE Player (
 );
 
 CREATE TABLE Club (
-  id    INTEGER NOT NULL  AUTO_INCREMENT,
-  squad VARCHAR(64),
-
-  PRIMARY KEY (id),
-
-  INDEX (squad)
+  squad VARCHAR(64) PRIMARY KEY
 );
 
 CREATE TABLE ClubSeason (
-  id      INTEGER NOT NULL  AUTO_INCREMENT,
   season  VARCHAR(10),
-  club_id INTEGER,
+  squad   INTEGER,
 
-  PRIMARY KEY (id),
-  FOREIGN KEY ClubSeason (club_id) REFERENCES Club (id),
-
-  INDEX (season, club_id)
+  PRIMARY KEY (season, squad)
 );
 
 CREATE TABLE OutfieldPlayerStat (
   id               INTEGER NOT NULL  AUTO_INCREMENT,
   player_id        INTEGER,
   season           VARCHAR(10),
-  club_id          INTEGER,
+  squad            INTEGER,
 
   # Descriptive Information
   comp             VARCHAR(64),
@@ -64,18 +55,18 @@ CREATE TABLE OutfieldPlayerStat (
 
   PRIMARY KEY (id),
   FOREIGN KEY PlayerStat (player_id) REFERENCES Player (player_id),
-  FOREIGN KEY PlayerStat (season, club_id) REFERENCES ClubSeason (season, club_id),
+  FOREIGN KEY PlayerStat (season, squad) REFERENCES ClubSeason (season, squad),
 
   INDEX (player_id),
-  INDEX (club_id),
-  INDEX (season, club_id)
+  INDEX (squad),
+  INDEX (season, squad)
 );
 
 CREATE TABLE GoalkeeperStat (
   id               INTEGER NOT NULL  AUTO_INCREMENT,
   player_id        INTEGER,
   season           VARCHAR(10),
-  club_id          INTEGER,
+  squad            INTEGER,
 
   # Descriptive Information
   comp             VARCHAR(64),
@@ -88,16 +79,16 @@ CREATE TABLE GoalkeeperStat (
   minutes_per_game INTEGER,
 
   # Goalkeeper Stats
-  save_percent     DECIMAL,
+  save_perc        DECIMAL,
   clean_sheets     INTEGER,
   cards_yellow     INTEGER,
   cards_red        INTEGER,
 
   PRIMARY KEY (id),
   FOREIGN KEY PlayerStat (player_id) REFERENCES Player (player_id),
-  FOREIGN KEY PlayerStat (season, club_id) REFERENCES ClubSeason (season, club_id),
+  FOREIGN KEY PlayerStat (season, squad) REFERENCES ClubSeason (season, squad),
 
   INDEX (player_id),
-  INDEX (club_id),
-  INDEX (season, club_id)
+  INDEX (squad),
+  INDEX (season, squad)
 );

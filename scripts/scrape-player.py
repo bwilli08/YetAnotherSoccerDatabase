@@ -24,6 +24,7 @@ club_season_table = {
         }
 
 player_stat_table = {
+        'player_id' : [],
         'season' : [],
         'squad' : [],
         'comp' : [],
@@ -39,6 +40,26 @@ player_stat_table = {
         'cards_red' : [],
         'shots_on_target' : []
         }
+
+goalkeeper_stat_table = {
+        'player_id' : [],
+        'season' : [],
+        'squad' : [],
+        'comp' : [],
+        'age' : [],
+        'games' : [],
+        'games_starts' : [],
+        'games_subs' : [],
+        'minutes_per_game' : [],
+        'save_perc' : [],
+        'clean_sheets' : [],
+        'cards_yellow' : [],
+        'cards_red' : [],
+        }
+
+# Global counter for player_id
+# We need to keep track of this in order to mirror the auto-incrementing MySQL ID
+cur_player_id = 1
 
 base_url = "https://fbref.com"
 base_player_url = "/en/players/"
@@ -88,29 +109,38 @@ def add_player_meta(player_id, meta):
     add_or_null(meta.find('span', itemprop='height'), (lambda x: x.get_text()), player_table['height'])
     add_or_null(meta.find('span', itemprop='birthDate'), (lambda x: x['data-birth']), player_table['date_of_birth'])
 
-def append_stat(stat, stat_name):
-    player_stat_table[stat_name].append(stat.get_text())
+def append_stat(stat, stat_name, target_dictionary):
+    target_dictionary[stat_name].append(stat)
 
-def add_stat(html, stat_name):
+def add_stat(html, stat_name, target_dictionary):
     stat = html.find(attrs={"data-stat" : stat_name})
 
-    append_stat(stat, stat_name)
+    append_stat(stat.get_text(), stat_name, target_dictionary)
 
-def parse_stat_entry(stat):
-    add_stat(stat, 'season')
-    add_stat(stat, 'squad')
-    add_stat(stat, 'comp')
-    add_stat(stat, 'age')
-    add_stat(stat, 'games')
-    add_stat(stat, 'games_starts')
-    add_stat(stat, 'games_subs')
-    add_stat(stat, 'minutes_per_game')
-    add_stat(stat, 'goals')
-    add_stat(stat, 'assists')
-    add_stat(stat, 'fouls')
-    add_stat(stat, 'cards_yellow')
-    add_stat(stat, 'cards_red')
-    add_stat(stat, 'shots_on_target')
+def parse_stat_entry(stat, isGK):
+    target_dictionary = goalkeeper_stat_table if isGK else player_stat_table
+
+    append_stat(cur_player_id, 'player_id', target_dictionary)
+    add_stat(stat, 'season', target_dictionary)
+    add_stat(stat, 'squad', target_dictionary)
+    add_stat(stat, 'comp', target_dictionary)
+    add_stat(stat, 'age', target_dictionary)
+    add_stat(stat, 'games', target_dictionary)
+    add_stat(stat, 'games_starts', target_dictionary)
+    add_stat(stat, 'games_subs', target_dictionary)
+    add_stat(stat, 'minutes_per_game', target_dictionary)
+    add_stat(stat, 'cards_yellow', target_dictionary)
+    add_stat(stat, 'cards_red', target_dictionary)
+
+    if not isGK:
+        add_stat(stat, 'goals', target_dictionary)
+        add_stat(stat, 'assists', target_dictionary)
+        add_stat(stat, 'fouls', target_dictionary)
+        add_stat(stat, 'shots_on_target', target_dictionary)
+
+def parse_gk_stat_entry(stat):
+    add_stat(stat, 'save_perc', goalkeeper_stat_table)
+    add_stat(stat, 'clean_sheets', goalkeeper_stat_table)
 
 def backfill_player(player_id):
     url = base_url + player_id
@@ -124,13 +154,23 @@ def backfill_player(player_id):
     #
     if player_table['position'][-1] != "GK":
         # Get stats table, ignore first row since its headers
-        stats = soup.find_all('table')[0].find_all('tr')[1:]
+        stats = soup.find('table', attrs={"id" : "stats"}).find_all('tr')[1:]
 
         # Parse through each year of the player's career
         for stat in stats:
-            parse_stat_entry(stat)
+            parse_stat_entry(stat, False)
 
         finished_players.add(player_id)
+    else:
+        gk_stats = soup.find('table', attrs={"id" : "stats_keeper"}).find_all('tr')[1:]
+        outfield_stats = soup.find('table', attrs={"id" : "stats"}).find_all('tr')[1:]
+
+        for ndx in range(0, len(gk_stats)):
+            parse_stat_entry(outfield_stats[ndx], True)
+            parse_gk_stat_entry(gk_stats[ndx])
+
+    global cur_player_id
+    cur_player_id += 1
 
 def run_backfill():
     #while to_do_team_seasons:
@@ -169,7 +209,6 @@ populate_team_seasons()
 run_backfill()
 
 pst_df = pd.DataFrame(data=player_stat_table)
-print(pst_df)
 #backfill_player("21a66f6a")
 #backfill_team(to_do_team_seasons.pop())
 
