@@ -24,7 +24,6 @@ club_season_table = {
         }
 
 player_stat_table = {
-        'player_id' : [],
         'season' : [],
         'squad' : [],
         'comp' : [],
@@ -46,9 +45,27 @@ base_player_url = "/en/players/"
 base_squad_url = "/en/squads/"
 
 # Track the already parsed players and seasons here
-finished_players = set()
 to_do_team_seasons = set()
+finished_players = set()
 
+# Utility method used to populate the above to_do_team_seasons list. Each entry is not guaranteed to actually exist.
+def populate_team_seasons():
+    # Use Harry Kane as a base, just to grab every season and team
+    url = base_url + base_player_url + "21a66f6a"
+    soup = BeautifulSoup(requests.get(url).text)
+
+    # Extract all listed teams from the webpage
+    team_ids = set(map((lambda x: x['value']), soup.find_all('select', attrs={"name": "squad"})[0].find_all('option')[1:]))
+
+    # Extract all known seasons from the webpage
+    seasons = set(map((lambda x: x['value']), soup.find_all('select', attrs={"name": "season"})[0].find_all('option')[1:]))
+
+    # Permute through each of the above and add an entry to the seasons list
+    for team_id in team_ids:
+        for season in seasons:
+            to_do_team_seasons.add(base_squad_url + team_id + "/" + season)
+
+# BEGIN: Rest of backfill methods
 def conditional_add(orig, dest, obj):
     if obj not in orig:
         dest.add(obj)
@@ -70,8 +87,6 @@ def add_player_meta(player_id, meta):
     add_position(meta.find_all('p'))
     add_or_null(meta.find('span', itemprop='height'), (lambda x: x.get_text()), player_table['height'])
     add_or_null(meta.find('span', itemprop='birthDate'), (lambda x: x['data-birth']), player_table['date_of_birth'])
-
-
 
 def append_stat(stat, stat_name):
     player_stat_table[stat_name].append(stat.get_text())
@@ -97,8 +112,6 @@ def parse_stat_entry(stat):
     add_stat(stat, 'cards_red')
     add_stat(stat, 'shots_on_target')
 
-# TODO: Need to differentiate between goalkeepers and regular players, because goalkeeper pages are formatted differently
-
 def backfill_player(player_id):
     url = base_url + player_id
     soup = BeautifulSoup(requests.get(url).text)
@@ -106,41 +119,29 @@ def backfill_player(player_id):
     meta = soup.find('div', itemtype='https://schema.org/Person')
     add_player_meta(player_id, meta)
 
+    # FIXME: For now, ignore goalkeepers. However, we should parse their data separately.
+    #if player_table['position'][-1] == "GK":
+    #
     if player_table['position'][-1] != "GK":
+        # Get stats table, ignore first row since its headers
         stats = soup.find_all('table')[0].find_all('tr')[1:]
+
+        # Parse through each year of the player's career
         for stat in stats:
             parse_stat_entry(stat)
 
         finished_players.add(player_id)
 
-def backfill_team(suffix):
-    url = base_url + suffix
-    soup = BeautifulSoup(requests.get(url).text)
-
-    print(soup.prettify())
-
-
-def populate_team_seasons():
-    # Use Harry Kane as a base, just to grab every season and team
-    url = base_url + base_player_url + "21a66f6a"
-    soup = BeautifulSoup(requests.get(url).text)
-
-    team_ids = set(map((lambda x: x['value']), soup.find_all('select', attrs={"name": "squad"})[0].find_all('option')[1:]))
-
-    seasons = set(map((lambda x: x['value']), soup.find_all('select', attrs={"name": "season"})[0].find_all('option')[1:]))
-
-    for team_id in team_ids:
-        for season in seasons:
-            to_do_team_seasons.add(base_squad_url + team_id + "/" + season)
-
 def run_backfill():
-    while to_do_team_seasons:
+    #while to_do_team_seasons:
         season = to_do_team_seasons.pop()
         url = base_url + base_squad_url + "361ca564/2013-2014"
 
+        # request the webpage and transform it through BeautifulSoup.
         soup = BeautifulSoup(requests.get(url).text)
         stat_table = soup.find('table', attrs={"id": "stats"})
 
+        # Since the webpage exists even if the season+squad is invalid, we need to check if the stats table is present
         if stat_table is not None:
             meta = soup.find('div', attrs={"class": "squads"}).find('h1', itemprop="name").find_all('span')
             season = meta[0].get_text()
@@ -167,6 +168,8 @@ def run_backfill():
 populate_team_seasons()
 run_backfill()
 
+pst_df = pd.DataFrame(data=player_stat_table)
+print(pst_df)
 #backfill_player("21a66f6a")
 #backfill_team(to_do_team_seasons.pop())
 
