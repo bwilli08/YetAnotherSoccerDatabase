@@ -7,6 +7,7 @@ import pandas as pd
 import time
 
 player_table = {
+        'player_id' : [],
         'name' : [],
         'position' : [],
         'height' : [],
@@ -17,7 +18,6 @@ club_table = {
         'squad' : []
         }
 
-# I should probably create my own internal id structure instead of just using "2013-14" and "Tottenham Hotspur F.C." as the Primary Keys
 club_season_table = {
         'squad' : [],
         'season' : []
@@ -104,6 +104,7 @@ def add_position(html):
             return
 
 def add_player_meta(player_id, meta):
+    player_table['player_id'].append(cur_player_id)
     player_table['name'].append(meta.find(itemprop='name').get_text())
     add_position(meta.find_all('p'))
     add_or_null(meta.find('span', itemprop='height'), (lambda x: x.get_text()), player_table['height'])
@@ -173,7 +174,7 @@ def backfill_player(player_id):
     cur_player_id += 1
 
 def run_backfill():
-    #while to_do_team_seasons:
+    while to_do_team_seasons:
         season = to_do_team_seasons.pop()
         url = base_url + base_squad_url + "361ca564/2013-2014"
 
@@ -195,7 +196,7 @@ def run_backfill():
             players = stat_table.find('tbody').find_all('tr')
 
             for player in players:
-                href = player.find('a', href=True)
+                href = players[3].find('a', href=True)
                 if href is not None and hasattr(href, 'href'):
                     player_ref = href['href']
 
@@ -208,9 +209,17 @@ def run_backfill():
 populate_team_seasons()
 run_backfill()
 
-pst_df = pd.DataFrame(data=player_stat_table)
-#backfill_player("21a66f6a")
-#backfill_team(to_do_team_seasons.pop())
+pt_df = pd.DataFrame(data=player_table)
+pt_df.to_csv('Player.csv')
 
+c_df = pd.DataFrame(data=player_table)
+c_df.to_csv('Club.csv')
 
+cs_df = pd.DataFrame(data=player_table)
+cs_df.to_csv('ClubSeason.csv')
 
+pst_df = pd.DataFrame(data=player_table)
+pst_df.to_csv('OutfieldPlayerStat.csv')
+
+gst_df = pd.DataFrame(data=player_table)
+gst_df.to_csv('GoalkeeperStat.csv')
