@@ -2,9 +2,28 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
 from bs4 import BeautifulSoup
+import sys
 import requests
-import pandas as pd
-import time
+import pandas
+
+##### Global Variables #####
+
+# Verbose Flag
+verbose = False
+
+# We need to keep track of this in order to mirror the auto-incrementing MySQL ID
+cur_player_id = 1
+
+# URL prefixes
+base_url = "https://fbref.com"
+base_player_url = "/en/players/"
+base_squad_url = "/en/squads/"
+
+# Track the already parsed players and seasons here
+to_do_team_seasons = set()
+finished_players = set()
+
+##### Pandas DataFrame Dictionaries #####
 
 player_table = {
         'player_id' : [],
@@ -57,36 +76,35 @@ goalkeeper_stat_table = {
         'cards_red' : [],
         }
 
-# Global counter for player_id
-# We need to keep track of this in order to mirror the auto-incrementing MySQL ID
-cur_player_id = 1
-
-base_url = "https://fbref.com"
-base_player_url = "/en/players/"
-base_squad_url = "/en/squads/"
-
-# Track the already parsed players and seasons here
-to_do_team_seasons = set()
-finished_players = set()
+##### Backfill Methods #####
 
 # Utility method used to populate the above to_do_team_seasons list. Each entry is not guaranteed to actually exist.
 def populate_team_seasons():
+    if verbose:
+        print("Populating squad and season lists.")
+
     # Use Harry Kane as a base, just to grab every season and team
     url = base_url + base_player_url + "21a66f6a"
     soup = BeautifulSoup(requests.get(url).text)
 
     # Extract all listed teams from the webpage
     team_ids = set(map((lambda x: x['value']), soup.find_all('select', attrs={"name": "squad"})[0].find_all('option')[1:]))
+    if verbose:
+        print("Found " + str(len(team_ids)) + " squads.")
 
     # Extract all known seasons from the webpage
     seasons = set(map((lambda x: x['value']), soup.find_all('select', attrs={"name": "season"})[0].find_all('option')[1:]))
+    if verbose:
+        print("Found " + str(len(seasons)) + " seasons.")
 
     # Permute through each of the above and add an entry to the seasons list
     for team_id in team_ids:
         for season in seasons:
             to_do_team_seasons.add(base_squad_url + team_id + "/" + season)
 
-# BEGIN: Rest of backfill methods
+    if verbose:
+        print("Found " + str(len(to_do_team_seasons)) + " possible squad and season combinations.")
+
 def conditional_add(orig, dest, obj):
     if obj not in orig:
         dest.add(obj)
@@ -150,9 +168,7 @@ def backfill_player(player_id):
     meta = soup.find('div', itemtype='https://schema.org/Person')
     add_player_meta(player_id, meta)
 
-    # FIXME: For now, ignore goalkeepers. However, we should parse their data separately.
-    #if player_table['position'][-1] == "GK":
-    #
+    # Check for goalkeepers and parse them differently
     if player_table['position'][-1] != "GK":
         # Get stats table, ignore first row since its headers
         stats = soup.find('table', attrs={"id" : "stats"}).find_all('tr')[1:]
@@ -176,7 +192,7 @@ def backfill_player(player_id):
 def run_backfill():
     while to_do_team_seasons:
         season = to_do_team_seasons.pop()
-        url = base_url + base_squad_url + "361ca564/2013-2014"
+        url = base_url + season
 
         # request the webpage and transform it through BeautifulSoup.
         soup = BeautifulSoup(requests.get(url).text)
@@ -188,6 +204,9 @@ def run_backfill():
             season = meta[0].get_text()
             squad = meta[1].get_text()
 
+            if verbose:
+                print("Backfilling: " + squad + " (" + season + ")")
+
             club_table['squad'].append(squad)
 
             club_season_table['squad'].append(squad)
@@ -196,30 +215,36 @@ def run_backfill():
             players = stat_table.find('tbody').find_all('tr')
 
             for player in players:
-                href = players[3].find('a', href=True)
+                href = player.find('a', href=True)
                 if href is not None and hasattr(href, 'href'):
                     player_ref = href['href']
 
                     if not (player_ref in finished_players):
-                        print("Backfilling: " + player_ref)
+                        if verbose:
+                            print("\tBackfilling: " + player_ref + " [" + str(cur_player_id) + "]")
                         backfill_player(player_ref)
 
-        time.sleep(1)
+
+##### Backfill Core Workflow #####
+
+if not set(sys.argv).isdisjoint(['-v', '--verbose']):
+    print("Verbose flag set to true, printing log messages.")
+    verbose = True
 
 populate_team_seasons()
 run_backfill()
 
-pt_df = pd.DataFrame(data=player_table)
+pt_df = pandas.DataFrame(data=player_table)
 pt_df.to_csv('Player.csv')
 
-c_df = pd.DataFrame(data=player_table)
+c_df = pandas.DataFrame(data=player_table)
 c_df.to_csv('Club.csv')
 
-cs_df = pd.DataFrame(data=player_table)
+cs_df = pandas.DataFrame(data=player_table)
 cs_df.to_csv('ClubSeason.csv')
 
-pst_df = pd.DataFrame(data=player_table)
+pst_df = pandas.DataFrame(data=player_table)
 pst_df.to_csv('OutfieldPlayerStat.csv')
 
-gst_df = pd.DataFrame(data=player_table)
+gst_df = pandas.DataFrame(data=player_table)
 gst_df.to_csv('GoalkeeperStat.csv')
