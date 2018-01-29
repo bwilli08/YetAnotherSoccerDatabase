@@ -7,7 +7,7 @@ USE SeniorProject;
 
 
 CREATE TABLE Player (
-  player_id     INTEGER NOT NULL  AUTO_INCREMENT,
+  player_id     INTEGER NOT NULL,
   name          VARCHAR(64),
   date_of_birth DATE,
   position      VARCHAR(10),
