@@ -2,6 +2,8 @@
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
 from bs4 import BeautifulSoup
+from sqlalchemy import create_engine
+import mysql.connector
 import time
 import sys
 import requests
@@ -25,6 +27,9 @@ base_squad_url = "/en/squads/"
 to_do_team_seasons = set()
 to_do_players = set()
 
+# engine for sql queries
+engine = create_engine('mysql+mysqlconnector://wilbren:Aug9th95@localhost/seniorproject')
+
 ##### Pandas DataFrame Dictionaries #####
 
 player_table = {
@@ -32,7 +37,8 @@ player_table = {
     'name': [],
     'position': [],
     'height': [],
-    'date_of_birth': []
+    'date_of_birth': [],
+    'fbref_id': []
 }
 
 club_table = {
@@ -41,7 +47,8 @@ club_table = {
 
 club_season_table = {
     'squad': [],
-    'season': []
+    'season': [],
+    'fbref_id': []
 }
 
 player_stat_table = {
@@ -137,6 +144,7 @@ def add_player_meta(player_id, meta):
     add_position(meta.find_all('p'))
     add_or_null(meta.find('span', itemprop='height'), (lambda x: x.get_text()), player_table['height'])
     add_or_null(meta.find('span', itemprop='birthDate'), (lambda x: x['data-birth']), player_table['date_of_birth'])
+    player_table['fbref_id'].append(player_id)
 
 
 def append_stat(stat, stat_name, target_dictionary):
@@ -211,7 +219,6 @@ def backfill_player(player_id):
             gk_table = soup.find('table', attrs={"id": "stats_keeper"})
             if gk_table is None:
                 # Some GKs don't have stats. Ignore these players.
-                finished_players.add(player_id)
                 return
             gk_stats = gk_table.find_all('tr')[1:]
             outfield_stats = soup.find('table', attrs={"id": "stats"}).find_all('tr')[1:]
@@ -225,8 +232,6 @@ def backfill_player(player_id):
 
         global cur_player_id
         cur_player_id += 1
-
-        finished_players.add(player_id)
     except requests.exceptions.ConnectionError:
         print("Could not read " + player_id + ". Hopefully retrying later. Sleeping for five seconds.")
         time.sleep(5)
@@ -234,9 +239,12 @@ def backfill_player(player_id):
 
 
 def run_backfill():
-    while to_do_team_seasons:
-        season = to_do_team_seasons.pop()
-        url = base_url + season
+    found = False
+
+    while not found:
+    #while to_do_team_seasons:
+        fbref_id = to_do_team_seasons.pop()
+        url = base_url + fbref_id
 
         try:
             # request the webpage and transform it through BeautifulSoup.
@@ -256,6 +264,7 @@ def run_backfill():
 
                 club_season_table['squad'].append(squad)
                 club_season_table['season'].append(season)
+                club_season_table['fbref_id'].append(fbref_id)
 
                 players = stat_table.find('tbody').find_all('tr')
 
@@ -263,8 +272,10 @@ def run_backfill():
                     href = player.find('a', href=True)
                     if href is not None and hasattr(href, 'href'):
                         to_do_players.add(href['href'])
+
+                found = True
             elif verbose:
-                print("Empty entry found: " + season)
+                print("Empty entry found: " + fbref_id)
 
         except requests.exceptions.ConnectionError:
             print("Could not read " + url + ". Adding back to the seasons set. Sleeping for five seconds.")
@@ -272,17 +283,26 @@ def run_backfill():
             to_do_team_seasons.append(season)
 
     c_df = pandas.DataFrame(data=club_table)
-    c_df.to_csv('Club.csv')
+    c_df.to_sql(name="Club", con=engine.raw_connection(), flavor='mysql', if_exists="append")
 
-    print(str(len(club_season_table['squad'])))
-
+    #print(str(len(club_season_table['squad'])))
+    # The above .to_sql statement works correctly. I can use the sql engine to not backfill players and club seasons that already exist
+'''
     cs_df = pandas.DataFrame(data=club_season_table)
     cs_df.to_csv('ClubSeason.csv')
 
     print(str(len(to_do_players)))
 
     while to_do_players:
-        player_ref = href['href']
+        player_ref = to_do_players.pop()
+        # TODO: WEAKLY REFERENCED OBJECT NO LONGER EXISTS
+        db_conn = sql.connect(host='localhost', database='SeniorProject', user='wilbren', password='Aug9th95')
+        cursor = db_conn.cursor()
+
+        sql_query = "SELECT COUNT(*) FROM Player WHERE fbref_id='{}'".format(player_ref)
+        print(sql_query)
+        cursor.execute(sql_query)
+        print(cursor.fetchone())
 
         if verbose:
             print("\tBackfilling: " + player_ref + " [" + str(cur_player_id) + "] {" + str(
@@ -297,7 +317,7 @@ def run_backfill():
 
     gst_df = pandas.DataFrame(data=goalkeeper_stat_table)
     gst_df.to_csv('GoalkeeperStat.csv')
-
+'''
 
 ##### Backfill Core Workflow #####
 
