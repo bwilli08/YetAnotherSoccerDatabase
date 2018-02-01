@@ -7,36 +7,51 @@ USE SeniorProject;
 
 
 CREATE TABLE Player (
-  player_id     INTEGER NOT NULL,
-  name          VARCHAR(64),
-  date_of_birth DATE,
-  position      VARCHAR(10),
-  height        INTEGER,
-  fbref_id      VARCHAR(64),
+  player_id         INTEGER NOT NULL,
+  name              VARCHAR(64),
+  date_of_birth     DATE,
+  position          VARCHAR(10),
+  height            INTEGER,
 
   PRIMARY KEY (player_id),
 
-  INDEX (name),
-  INDEX (fbref_id)
+  INDEX (name)
+);
+
+CREATE TABLE TempPlayer (
+  fbref_id          VARCHAR(64),
+  finished_backfill BOOLEAN,
+
+  PRIMARY KEY (fbref_id)
 );
 
 CREATE TABLE Club (
-  squad VARCHAR(64) PRIMARY KEY
+  squad VARCHAR(64),
+
+  PRIMARY KEY (squad)
+);
+
+CREATE TABLE GarbageSeason (
+  fbref_id  VARCHAR(64),
+
+  PRIMARY KEY (fbref_id)
 );
 
 CREATE TABLE ClubSeason (
-  season    VARCHAR(10),
-  squad     INTEGER,
-  fbref_id  VARCHAR(64),
+  season            VARCHAR(10),
+  squad             VARCHAR(64),
+  fbref_id          VARCHAR(64),
+  finished_backfill BOOLEAN,
 
-  PRIMARY KEY (season, squad)
+  PRIMARY KEY (season, squad),
+  FOREIGN KEY (squad) REFERENCES Club(squad)
 );
 
 CREATE TABLE OutfieldPlayerStat (
   id               INTEGER NOT NULL  AUTO_INCREMENT,
   player_id        INTEGER,
   season           VARCHAR(10),
-  squad            INTEGER,
+  squad            VARCHAR(64),
 
   # Descriptive Information
   comp             VARCHAR(64),
@@ -69,7 +84,7 @@ CREATE TABLE GoalkeeperStat (
   id               INTEGER NOT NULL  AUTO_INCREMENT,
   player_id        INTEGER,
   season           VARCHAR(10),
-  squad            INTEGER,
+  squad            VARCHAR(64),
 
   # Descriptive Information
   comp             VARCHAR(64),

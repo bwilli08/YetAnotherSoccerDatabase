@@ -13,43 +13,120 @@ import datetime
 ##### Global Variables #####
 
 # Verbose Flag
-verbose = False
-
-# We need to keep track of this in order to mirror the auto-incrementing MySQL ID
-cur_player_id = 1
+verbose = None
+if not set(sys.argv).isdisjoint(['-v', '--verbose']):
+    print("Verbose flag set to true, printing log messages.")
+    verbose = True
+else:
+    verbose = False
 
 # URL prefixes
 base_url = "https://fbref.com"
 base_player_url = "/en/players/"
 base_squad_url = "/en/squads/"
 
-# Track the already parsed players and seasons here
-to_do_team_seasons = set()
-to_do_players = set()
-
 # engine for sql queries
 engine = create_engine('mysql+mysqlconnector://wilbren:Aug9th95@localhost/seniorproject')
 
-##### Pandas DataFrame Dictionaries #####
+
+def convert_sql_result_to_list(statement):
+    return list(map((lambda x: x[0]), engine.execute(statement).fetchall()))
+
+
+def convert_sql_result_to_set(statement):
+    return set(map((lambda x: x[0]), engine.execute(statement).fetchall()))
+
+
+existing_seasons = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=true")
+garbage_seasons = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM GarbageSeason")
+backfilled_seasons = existing_seasons + garbage_seasons
+backfilled_players = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=true")
+
+# Track the already parsed players and seasons here
+current_squads = convert_sql_result_to_set("SELECT DISTINCT squad FROM Club")
+to_do_team_seasons = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=false")
+to_do_players = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=false")
+
+# We need to keep track of this in order to mirror the auto-incrementing MySQL ID
+max_player_id_res = engine.execute("SELECT MAX(player_id) from PLAYER").fetchone()
+cur_player_id = max_player_id_res[0] + 1 if max_player_id_res[0] is not None else 1
+
+
+##### Pandas DataFrame Logic #####
+def add_to_database(table_name, data_frame):
+    data_frame.to_sql(name=table_name, con=engine.raw_connection(), flavor="mysql", if_exists="append")
+
 
 player_table = {
     'player_id': [],
     'name': [],
     'position': [],
     'height': [],
-    'date_of_birth': [],
-    'fbref_id': []
+    'date_of_birth': []
 }
+
+
+def update_db_player():
+    add_to_database("Player", pandas.DataFrame(player_table))
+
+    player_table['player_id'].clear()
+    player_table['name'].clear()
+    player_table['position'].clear()
+    player_table['height'].clear()
+    player_table['date_of_birth'].clear()
+
+
+temp_player_table = {
+    'fbref_id': [],
+    'finished_backfill': []
+}
+
+
+def update_db_temp_player():
+    add_to_database("TempPlayer", pandas.DataFrame(temp_player_table))
+
+    temp_player_table['fbref_id'].clear()
+    temp_player_table['finished_backfill'].clear()
+
 
 club_table = {
     'squad': []
 }
 
+
+def update_db_club():
+    add_to_database("Club", pandas.DataFrame(club_table))
+
+    club_table['squad'].clear()
+
+
+garbage_season_table = {
+    'fbref_id': []
+}
+
+
+def update_db_garbage_season():
+    add_to_database("GarbageSeason", pandas.DataFrame(garbage_season_table))
+
+    garbage_season_table['fbref_id'].clear()
+
+
 club_season_table = {
     'squad': [],
     'season': [],
-    'fbref_id': []
+    'fbref_id': [],
+    'finished_backfill': []
 }
+
+
+def update_db_club_season():
+    add_to_database("ClubSeason", pandas.DataFrame(club_season_table))
+
+    club_season_table['squad'].clear()
+    club_season_table['season'].clear()
+    club_season_table['fbref_id'].clear()
+    club_season_table['finished_backfill'].clear()
+
 
 player_stat_table = {
     'player_id': [],
@@ -69,6 +146,27 @@ player_stat_table = {
     'shots_on_target': []
 }
 
+
+def update_db_outfield_player_stat():
+    add_to_database("OutfieldPlayerStat", pandas.DataFrame(player_stat_table))
+
+    player_stat_table['player_id'].clear()
+    player_stat_table['season'].clear()
+    player_stat_table['squad'].clear()
+    player_stat_table['comp'].clear()
+    player_stat_table['age'].clear()
+    player_stat_table['games'].clear()
+    player_stat_table['games_starts'].clear()
+    player_stat_table['games_subs'].clear()
+    player_stat_table['minutes_per_game'].clear()
+    player_stat_table['goals'].clear()
+    player_stat_table['assists'].clear()
+    player_stat_table['fouls'].clear()
+    player_stat_table['cards_yellow'].clear()
+    player_stat_table['cards_red'].clear()
+    player_stat_table['shots_on_target'].clear()
+
+
 goalkeeper_stat_table = {
     'player_id': [],
     'season': [],
@@ -84,6 +182,24 @@ goalkeeper_stat_table = {
     'cards_yellow': [],
     'cards_red': [],
 }
+
+
+def update_db_goalkeeper_stat():
+    add_to_database("GoalkeeperPlayerStat", pandas.DataFrame(goalkeeper_stat_table))
+
+    goalkeeper_stat_table['player_id'].clear()
+    goalkeeper_stat_table['season'].clear()
+    goalkeeper_stat_table['squad'].clear()
+    goalkeeper_stat_table['comp'].clear()
+    goalkeeper_stat_table['age'].clear()
+    goalkeeper_stat_table['games'].clear()
+    goalkeeper_stat_table['games_starts'].clear()
+    goalkeeper_stat_table['games_subs'].clear()
+    goalkeeper_stat_table['minutes_per_game'].clear()
+    goalkeeper_stat_table['save_perc'].clear()
+    goalkeeper_stat_table['clean_sheets'].clear()
+    goalkeeper_stat_table['cards_yellow'].clear()
+    goalkeeper_stat_table['cards_red'].clear()
 
 
 ##### Backfill Methods #####
@@ -112,10 +228,13 @@ def populate_team_seasons():
     # Permute through each of the above and add an entry to the seasons list
     for team_id in team_ids:
         for season in seasons:
-            to_do_team_seasons.add(base_squad_url + team_id + "/" + season)
+            fbref_id = base_squad_url + team_id + "/" + season
+            if fbref_id not in backfilled_seasons:
+                to_do_team_seasons.add(base_squad_url + team_id + "/" + season)
 
     if verbose:
-        print("Found " + str(len(to_do_team_seasons)) + " possible squad and season combinations.")
+        print("Found " + str(
+            len(to_do_team_seasons)) + " possible squad and season combinations that haven't been backfilled.")
 
 
 def conditional_add(orig, dest, obj):
@@ -142,9 +261,9 @@ def add_player_meta(player_id, meta):
     player_table['player_id'].append(cur_player_id)
     player_table['name'].append(meta.find(itemprop='name').get_text())
     add_position(meta.find_all('p'))
-    add_or_null(meta.find('span', itemprop='height'), (lambda x: x.get_text()), player_table['height'])
+    add_or_null(meta.find('span', itemprop='height'), (lambda x: int(x.get_text().replace("cm", "").strip())),
+                player_table['height'])
     add_or_null(meta.find('span', itemprop='birthDate'), (lambda x: x['data-birth']), player_table['date_of_birth'])
-    player_table['fbref_id'].append(player_id)
 
 
 def append_stat(stat, stat_name, target_dictionary):
@@ -181,8 +300,8 @@ def parse_stat_entry(stat, isGK):
 
 
 def add_optional_gk_stats():
-    append_stat("null", 'games_starts', goalkeeper_stat_table)
-    append_stat("null", 'games_subs', goalkeeper_stat_table)
+    append_stat(None, 'games_starts', goalkeeper_stat_table)
+    append_stat(None, 'games_subs', goalkeeper_stat_table)
 
 
 def parse_gk_stat_entry(stat):
@@ -201,20 +320,29 @@ def parse_gk_stat_entry(stat):
 
 def backfill_player(player_id):
     try:
+        global cur_player_id
+
+        if verbose:
+            print("Backfilling " + player_id + " [" + str(cur_player_id) + "]")
+
         url = base_url + player_id
         soup = BeautifulSoup(requests.get(url).text)
 
         meta = soup.find('div', itemtype='https://schema.org/Person')
         add_player_meta(player_id, meta)
+        position = player_table['position'][-1]
+        update_db_player()
 
         # Check for goalkeepers and parse them differently
-        if player_table['position'][-1] != "GK":
+        if position != "GK":
             # Get stats table, ignore first row since its headers
             stats = soup.find('table', attrs={"id": "stats"}).find_all('tr')[1:]
 
             # Parse through each year of the player's career
             for stat in stats:
                 parse_stat_entry(stat, False)
+
+            update_db_outfield_player_stat()
         else:
             gk_table = soup.find('table', attrs={"id": "stats_keeper"})
             if gk_table is None:
@@ -230,7 +358,10 @@ def backfill_player(player_id):
                 else:
                     add_optional_gk_stats()
 
-        global cur_player_id
+            update_db_goalkeeper_stat()
+
+        engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id='{}'".format(player_id))
+
         cur_player_id += 1
     except requests.exceptions.ConnectionError:
         print("Could not read " + player_id + ". Hopefully retrying later. Sleeping for five seconds.")
@@ -238,92 +369,70 @@ def backfill_player(player_id):
         return
 
 
-def run_backfill():
-    found = False
+def populate_club_and_temp_player_tables():
+    global verbose
 
-    while not found:
-    #while to_do_team_seasons:
+    while to_do_team_seasons:
         fbref_id = to_do_team_seasons.pop()
         url = base_url + fbref_id
 
-        try:
-            # request the webpage and transform it through BeautifulSoup.
-            soup = BeautifulSoup(requests.get(url).text)
-            stat_table = soup.find('table', attrs={"id": "stats"})
+        # request the webpage and transform it through BeautifulSoup.
+        soup = BeautifulSoup(requests.get(url).text)
+        stat_table = soup.find('table', attrs={"id": "stats"})
 
-            # Since the webpage exists even if the season+squad is invalid, we need to check if the stats table is present
-            if stat_table is not None:
-                meta = soup.find('div', attrs={"class": "squads"}).find('h1', itemprop="name").find_all('span')
-                season = meta[0].get_text()
-                squad = meta[1].get_text()
+        # Since the webpage exists even if the season+squad is invalid, we need to check if the stats table is present
+        if stat_table is not None:
+            meta = soup.find('div', attrs={"class": "squads"}).find('h1', itemprop="name").find_all('span')
+            season = meta[0].get_text()
+            squad = meta[1].get_text()
 
-                if verbose:
-                    print("Adding " + squad + " (" + season + ") to tables.")
+            if verbose:
+                print("Adding " + squad + " (" + season + ") to tables.")
 
+            if squad not in current_squads:
                 club_table['squad'].append(squad)
+                update_db_club()
+                current_squads.add(squad)
 
+            if fbref_id not in backfilled_seasons:
                 club_season_table['squad'].append(squad)
                 club_season_table['season'].append(season)
                 club_season_table['fbref_id'].append(fbref_id)
+                club_season_table['finished_backfill'].append(False)
+                update_db_club_season()
 
-                players = stat_table.find('tbody').find_all('tr')
+            players = stat_table.find('tbody').find_all('tr')
 
-                for player in players:
-                    href = player.find('a', href=True)
-                    if href is not None and hasattr(href, 'href'):
-                        to_do_players.add(href['href'])
+            for player in players:
+                href = player.find('a', href=True)
+                if href is not None and hasattr(href, 'href'):
+                    player_href = href['href']
+                    if player_href not in backfilled_players and player_href not in to_do_players:
+                        to_do_players.add(player_href)
+                        temp_player_table['fbref_id'].append(player_href)
+                        temp_player_table['finished_backfill'].append(False)
 
-                found = True
-            elif verbose:
-                print("Empty entry found: " + fbref_id)
+            update_db_temp_player()
 
-        except requests.exceptions.ConnectionError:
-            print("Could not read " + url + ". Adding back to the seasons set. Sleeping for five seconds.")
-            time.sleep(5)
-            to_do_team_seasons.append(season)
+            if verbose:
+                print("Finished backfilling " + squad + " (" + season + ")")
 
-    c_df = pandas.DataFrame(data=club_table)
-    c_df.to_sql(name="Club", con=engine.raw_connection(), flavor='mysql', if_exists="append")
+            engine.execute(
+                "UPDATE ClubSeason SET finished_backfill=true WHERE squad='{}' AND season='{}'".format(squad, season))
+        elif verbose:
+            print("Empty entry found: " + fbref_id)
 
-    #print(str(len(club_season_table['squad'])))
-    # The above .to_sql statement works correctly. I can use the sql engine to not backfill players and club seasons that already exist
-'''
-    cs_df = pandas.DataFrame(data=club_season_table)
-    cs_df.to_csv('ClubSeason.csv')
+            garbage_season_table['fbref_id'].append(fbref_id)
+            update_db_garbage_season()
 
-    print(str(len(to_do_players)))
-
-    while to_do_players:
-        player_ref = to_do_players.pop()
-        # TODO: WEAKLY REFERENCED OBJECT NO LONGER EXISTS
-        db_conn = sql.connect(host='localhost', database='SeniorProject', user='wilbren', password='Aug9th95')
-        cursor = db_conn.cursor()
-
-        sql_query = "SELECT COUNT(*) FROM Player WHERE fbref_id='{}'".format(player_ref)
-        print(sql_query)
-        cursor.execute(sql_query)
-        print(cursor.fetchone())
-
-        if verbose:
-            print("\tBackfilling: " + player_ref + " [" + str(cur_player_id) + "] {" + str(
-                    datetime.datetime.now()) + "}")
-        backfill_player(player_ref)
-
-    pt_df = pandas.DataFrame(data=player_table)
-    pt_df.to_csv('Player.csv')
-
-    pst_df = pandas.DataFrame(data=player_stat_table)
-    pst_df.to_csv('OutfieldPlayerStat.csv')
-
-    gst_df = pandas.DataFrame(data=goalkeeper_stat_table)
-    gst_df.to_csv('GoalkeeperStat.csv')
-'''
 
 ##### Backfill Core Workflow #####
-
-if not set(sys.argv).isdisjoint(['-v', '--verbose']):
-    print("Verbose flag set to true, printing log messages.")
-    verbose = True
+if verbose:
+    print("Backfilled seasons: " + str(backfilled_seasons))
+    print("Backfilled players: " + str(backfilled_players))
+    print("Current player id: " + str(cur_player_id))
 
 populate_team_seasons()
-run_backfill()
+populate_club_and_temp_player_tables()
+while to_do_players:
+    backfill_player(to_do_players.pop())
