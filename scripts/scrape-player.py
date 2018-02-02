@@ -437,7 +437,7 @@ def populate_club_and_temp_player_tables():
                 club_season_table['fbref_id'].append(fbref_id)
                 club_season_table['finished_backfill'].append(False)
                 update_db_club_season()
-                backfilled_seasons.add(fbref_id)
+                backfilled_seasons.append(fbref_id)
 
             players = stat_table.find('tbody').find_all('tr')
 
