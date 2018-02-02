@@ -29,23 +29,24 @@ base_squad_url = "/en/squads/"
 engine = create_engine('mysql+mysqlconnector://wilbren:Aug9th95@localhost/seniorproject')
 
 
-def convert_sql_result_to_list(statement):
-    return list(map((lambda x: x[0]), engine.execute(statement).fetchall()))
+def convert_sql_result_to_list(statement, ndx):
+    return list(map((lambda x: x[ndx]), engine.execute(statement).fetchall()))
 
 
-def convert_sql_result_to_set(statement):
-    return set(map((lambda x: x[0]), engine.execute(statement).fetchall()))
+def convert_sql_result_to_set(statement, ndx):
+    return set(map((lambda x: x[ndx]), engine.execute(statement).fetchall()))
 
 
-existing_seasons = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=true")
-garbage_seasons = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM GarbageSeason")
+existing_seasons = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=true", 0)
+garbage_seasons = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM GarbageSeason", 0)
 backfilled_seasons = existing_seasons + garbage_seasons
-backfilled_players = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=true")
+backfilled_players = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=true", 0)
 
 # Track the already parsed players and seasons here
-current_squads = convert_sql_result_to_set("SELECT DISTINCT squad FROM Club")
-to_do_team_seasons = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=false")
-to_do_players = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=false")
+current_squads = convert_sql_result_to_set("SELECT DISTINCT squad FROM Club", 0)
+to_do_team_seasons = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=false", 0)
+finished_meta = engine.execute("SELECT player_id,fbref_id FROM Player").fetchall()
+to_do_players = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=false", 0)
 
 # We need to keep track of this in order to mirror the auto-incrementing MySQL ID
 max_player_id_res = engine.execute("SELECT MAX(player_id) from PLAYER").fetchone()
@@ -62,18 +63,24 @@ player_table = {
     'name': [],
     'position': [],
     'height': [],
-    'date_of_birth': []
+    'date_of_birth': [],
+    'fbref_id': []
 }
 
 
-def update_db_player():
-    add_to_database("Player", pandas.DataFrame(player_table))
-
+def clear_meta_dict():
     player_table['player_id'].clear()
     player_table['name'].clear()
     player_table['position'].clear()
     player_table['height'].clear()
     player_table['date_of_birth'].clear()
+    player_table['fbref_id'].clear()
+
+
+def update_db_player():
+    add_to_database("Player", pandas.DataFrame(player_table))
+
+    clear_meta_dict()
 
 
 temp_player_table = {
@@ -257,13 +264,14 @@ def add_position(html):
     player_table['position'].append("??")
 
 
-def add_player_meta(player_id, meta):
-    player_table['player_id'].append(cur_player_id)
+def add_player_meta(player_id, fbref_id, meta):
+    player_table['player_id'].append(player_id)
     player_table['name'].append(meta.find(itemprop='name').get_text())
     add_position(meta.find_all('p'))
     add_or_null(meta.find('span', itemprop='height'), (lambda x: int(x.get_text().replace("cm", "").strip())),
                 player_table['height'])
     add_or_null(meta.find('span', itemprop='birthDate'), (lambda x: x['data-birth']), player_table['date_of_birth'])
+    player_table['fbref_id'].append(fbref_id)
 
 
 def append_stat(stat, stat_name, target_dictionary):
@@ -276,12 +284,12 @@ def add_stat(html, stat_name, target_dictionary):
     append_stat(stat.get_text(), stat_name, target_dictionary)
 
 
-def parse_stat_entry(stat, isGK):
+def parse_stat_entry(stat, player_id, isGK):
     target_dictionary = goalkeeper_stat_table if isGK else player_stat_table
 
     # Don't add any of these stats for goalkeepers, since they're found in the GK table
     if not isGK:
-        append_stat(cur_player_id, 'player_id', target_dictionary)
+        append_stat(player_id, 'player_id', target_dictionary)
         add_stat(stat, 'season', target_dictionary)
         add_stat(stat, 'squad', target_dictionary)
         add_stat(stat, 'comp', target_dictionary)
@@ -304,8 +312,8 @@ def add_optional_gk_stats():
     append_stat(None, 'games_subs', goalkeeper_stat_table)
 
 
-def parse_gk_stat_entry(stat):
-    append_stat(cur_player_id, 'player_id', goalkeeper_stat_table)
+def parse_gk_stat_entry(player_id, stat):
+    append_stat(player_id, 'player_id', goalkeeper_stat_table)
     add_stat(stat, 'season', goalkeeper_stat_table)
     add_stat(stat, 'squad', goalkeeper_stat_table)
     add_stat(stat, 'comp', goalkeeper_stat_table)
@@ -318,20 +326,48 @@ def parse_gk_stat_entry(stat):
     add_stat(stat, 'clean_sheets', goalkeeper_stat_table)
 
 
-def backfill_player(player_id):
+def tuple_list_contains(lst, val, ndx):
+    for tuple in lst:
+        if tuple[ndx] == val:
+            return True
+    return False
+
+
+def tuple_list_get(lst, val, ndx):
+    for tuple in lst:
+        if tuple[ndx] == val:
+            return tuple
+    return None
+
+
+def backfill_player(fbref_id):
     try:
+        # TODO: Need to grab the player_id from the existing meta, if possible
         global cur_player_id
+        is_new_player = None
+        player_id = None
+        if tuple_list_contains(finished_meta, fbref_id, 1):
+            player_id = tuple_list_get(finished_meta, fbref_id, 1)[0]
+            is_new_player = False
+        else:
+            player_id = cur_player_id
+            is_new_player = True
 
         if verbose:
-            print("Backfilling " + player_id + " [" + str(cur_player_id) + "]")
+            new_player_str = "new player " if is_new_player else ""
+            print("Backfilling " + new_player_str + fbref_id + " [" + str(player_id) + "]")
 
-        url = base_url + player_id
+        url = base_url + fbref_id
         soup = BeautifulSoup(requests.get(url).text)
 
         meta = soup.find('div', itemtype='https://schema.org/Person')
-        add_player_meta(player_id, meta)
+        add_player_meta(player_id, fbref_id, meta)
         position = player_table['position'][-1]
-        update_db_player()
+        if is_new_player:
+            update_db_player()
+            finished_meta.append((player_id, fbref_id))
+        else:
+            clear_meta_dict()
 
         # Check for goalkeepers and parse them differently
         if position != "GK":
@@ -340,7 +376,7 @@ def backfill_player(player_id):
 
             # Parse through each year of the player's career
             for stat in stats:
-                parse_stat_entry(stat, False)
+                parse_stat_entry(stat, player_id, False)
 
             update_db_outfield_player_stat()
         else:
@@ -352,9 +388,9 @@ def backfill_player(player_id):
             outfield_stats = soup.find('table', attrs={"id": "stats"}).find_all('tr')[1:]
 
             for ndx in range(0, len(gk_stats)):
-                parse_gk_stat_entry(gk_stats[ndx])
+                parse_gk_stat_entry(player_id, gk_stats[ndx])
                 if len(outfield_stats) > ndx:
-                    parse_stat_entry(outfield_stats[ndx], True)
+                    parse_stat_entry(outfield_stats[ndx], player_id, True)
                 else:
                     add_optional_gk_stats()
 
@@ -362,7 +398,8 @@ def backfill_player(player_id):
 
         engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id='{}'".format(player_id))
 
-        cur_player_id += 1
+        if is_new_player:
+            cur_player_id += 1
     except requests.exceptions.ConnectionError:
         print("Could not read " + player_id + ". Hopefully retrying later. Sleeping for five seconds.")
         time.sleep(5)
@@ -400,6 +437,7 @@ def populate_club_and_temp_player_tables():
                 club_season_table['fbref_id'].append(fbref_id)
                 club_season_table['finished_backfill'].append(False)
                 update_db_club_season()
+                backfilled_seasons.add(fbref_id)
 
             players = stat_table.find('tbody').find_all('tr')
 
@@ -428,8 +466,8 @@ def populate_club_and_temp_player_tables():
 
 ##### Backfill Core Workflow #####
 if verbose:
-    print("Backfilled seasons: " + str(backfilled_seasons))
-    print("Backfilled players: " + str(backfilled_players))
+    print("Backfilled seasons: " + str(len(backfilled_seasons)))
+    print("Backfilled players: " + str(len(backfilled_players)))
     print("Current player id: " + str(cur_player_id))
 
 populate_team_seasons()

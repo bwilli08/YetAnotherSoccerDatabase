@@ -12,10 +12,12 @@ CREATE TABLE Player (
   date_of_birth     DATE,
   position          VARCHAR(10),
   height            INTEGER,
+  fbref_id          VARCHAR(64),
 
   PRIMARY KEY (player_id),
 
-  INDEX (name)
+  INDEX (name),
+  INDEX (fbref_id)
 );
 
 CREATE TABLE TempPlayer (
