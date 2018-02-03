@@ -9,6 +9,7 @@ import sys
 import requests
 import pandas
 import datetime
+import copy
 
 ##### Global Variables #####
 
@@ -44,7 +45,8 @@ backfilled_players = convert_sql_result_to_list("SELECT DISTINCT fbref_id FROM T
 
 # Track the already parsed players and seasons here
 current_squads = convert_sql_result_to_set("SELECT DISTINCT squad FROM Club", 0)
-to_do_team_seasons = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=false", 0)
+partial_seasons = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=false", 0)
+to_do_team_seasons = copy.copy(partial_seasons)
 finished_meta = engine.execute("SELECT player_id,fbref_id FROM Player").fetchall()
 to_do_players = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=false", 0)
 
@@ -424,7 +426,7 @@ def populate_club_and_temp_player_tables():
             squad = meta[1].get_text()
 
             if verbose:
-                print("Adding " + squad + " (" + season + ") to tables.")
+                print("Adding " + squad + " (" + season + ") to tables. {" + fbref_id + "}")
 
             if squad not in current_squads:
                 club_table['squad'].append(squad)
@@ -432,11 +434,12 @@ def populate_club_and_temp_player_tables():
                 current_squads.add(squad)
 
             if fbref_id not in backfilled_seasons:
-                club_season_table['squad'].append(squad)
-                club_season_table['season'].append(season)
-                club_season_table['fbref_id'].append(fbref_id)
-                club_season_table['finished_backfill'].append(False)
-                update_db_club_season()
+                if fbref_id not in partial_seasons:
+                    club_season_table['squad'].append(squad)
+                    club_season_table['season'].append(season)
+                    club_season_table['fbref_id'].append(fbref_id)
+                    club_season_table['finished_backfill'].append(False)
+                    update_db_club_season()
                 backfilled_seasons.append(fbref_id)
 
             players = stat_table.find('tbody').find_all('tr')
@@ -467,6 +470,7 @@ def populate_club_and_temp_player_tables():
 ##### Backfill Core Workflow #####
 if verbose:
     print("Backfilled seasons: " + str(len(backfilled_seasons)))
+    print("Partially backfilled seasons: " + str(partial_seasons))
     print("Backfilled players: " + str(len(backfilled_players)))
     print("Current player id: " + str(cur_player_id))
 
