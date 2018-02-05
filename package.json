@@ -2,7 +2,7 @@
   "name": "yetanothersoccerdatabase",
   "version": "1.0.0",
   "description": "Senior Project related to Soccer team and player statistics and match simulation/prediction with ML.",
-  "main": "app.js",
+  "main": "src/app.js",
   "scripts": {
     "test": "echo \\\"No Test Specified\\\" && exit 1"
   },
@@ -15,5 +15,11 @@
   "bugs": {
     "url": "https://github.com/bwilli08/YetAnotherSoccerDatabase/issues"
   },
-  "homepage": "https://github.com/bwilli08/YetAnotherSoccerDatabase#readme"
+  "homepage": "https://github.com/bwilli08/YetAnotherSoccerDatabase#readme",
+  "dependencies": {
+    "bootstrap": "^4.0.0",
+    "express": "^4.16.2",
+    "jquery": "^3.3.1",
+    "popper.js": "^1.12.9"
+  }
 }
