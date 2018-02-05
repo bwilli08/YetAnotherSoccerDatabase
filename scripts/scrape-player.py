@@ -215,6 +215,7 @@ def update_db_goalkeeper_stat():
 
 ##### Backfill Methods #####
 
+# DEPRECATED: All seasons shown through these lists have been backfilled. Keeping around for emergencies.
 # Utility method used to populate the above to_do_team_seasons list. Each entry is not guaranteed to actually exist.
 def populate_team_seasons():
     if verbose:
@@ -421,7 +422,7 @@ def backfill_player(fbref_id):
                 if verbose:
                     print("error saving entry for " + str(player_id))
 
-        engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id='{}'".format(player_id))
+        engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id='{}'".format(fbref_id))
 
         if is_new_player:
             cur_player_id += 1
@@ -504,9 +505,12 @@ if verbose:
     print("Backfilled seasons: " + str(len(backfilled_seasons)))
     print("Partially backfilled seasons: " + str(partial_seasons))
     print("Backfilled players: " + str(len(backfilled_players)))
+    print("Remaining players: " + str(len(to_do_players)))
     print("Current player id: " + str(cur_player_id))
 
-populate_team_seasons()
+# No longer required since we've parsed through the entire club and season lists on the fbref website
+#populate_team_seasons()
+
 populate_club_and_temp_player_tables()
 while to_do_players:
     backfill_player(to_do_players.pop())

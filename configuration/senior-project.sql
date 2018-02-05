@@ -1,8 +1,9 @@
-DROP DATABASE SeniorProject;
+#DROP DATABASE SeniorProject;
 
-CREATE DATABASE SeniorProject
-  DEFAULT CHARACTER SET utf8
-  DEFAULT COLLATE utf8_general_ci;
+#CREATE DATABASE SeniorProject
+#  DEFAULT CHARACTER SET utf8
+#  DEFAULT COLLATE utf8_general_ci;
+
 USE SeniorProject;
 
 
