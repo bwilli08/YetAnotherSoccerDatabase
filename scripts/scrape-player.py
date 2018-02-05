@@ -251,11 +251,13 @@ def conditional_add(orig, dest, obj):
         dest.add(obj)
 
 
-def add_or_null(obj, func, arr):
+def add_or_default(obj, func, arr, default):
     if obj is not None:
         arr.append(func(obj))
     else:
-        arr.append("null")
+        if verbose:
+            print("Defaulting to " + default)
+        arr.append(default)
 
 
 def add_position(html):
@@ -270,9 +272,9 @@ def add_player_meta(player_id, fbref_id, meta):
     player_table['player_id'].append(player_id)
     player_table['name'].append(meta.find(itemprop='name').get_text())
     add_position(meta.find_all('p'))
-    add_or_null(meta.find('span', itemprop='height'), (lambda x: int(x.get_text().replace("cm", "").strip())),
-                player_table['height'])
-    add_or_null(meta.find('span', itemprop='birthDate'), (lambda x: x['data-birth']), player_table['date_of_birth'])
+    add_or_default(meta.find('span', itemprop='height'), (lambda x: int(x.get_text().replace("cm", "").strip())),
+                player_table['height'], str(0))
+    add_or_default(meta.find('span', itemprop='birthDate'), (lambda x: x['data-birth']), player_table['date_of_birth'], "01-01-1970")
     player_table['fbref_id'].append(fbref_id)
 
 
@@ -292,6 +294,7 @@ def parse_stat_entry(stat, player_id, isGK):
     # Don't add any of these stats for goalkeepers, since they're found in the GK table
     if not isGK:
         append_stat(player_id, 'player_id', target_dictionary)
+        # Need to check if this season + squad exists, and backfill it if not
         add_stat(stat, 'season', target_dictionary)
         add_stat(stat, 'squad', target_dictionary)
         add_stat(stat, 'comp', target_dictionary)
@@ -344,7 +347,6 @@ def tuple_list_get(lst, val, ndx):
 
 def backfill_player(fbref_id):
     try:
-        # TODO: Need to grab the player_id from the existing meta, if possible
         global cur_player_id
         is_new_player = None
         player_id = None
@@ -380,7 +382,11 @@ def backfill_player(fbref_id):
             for stat in stats:
                 parse_stat_entry(stat, player_id, False)
 
-            update_db_outfield_player_stat()
+            try:
+                update_db_outfield_player_stat()
+            except mysql.connector.errors.IntegrityError:
+                if verbose:
+                    print("error saving entry for " + str(player_id))
         else:
             gk_table = soup.find('table', attrs={"id": "stats_keeper"})
             if gk_table is None:
@@ -396,7 +402,11 @@ def backfill_player(fbref_id):
                 else:
                     add_optional_gk_stats()
 
-            update_db_goalkeeper_stat()
+            try:
+                update_db_goalkeeper_stat()
+            except mysql.connector.errors.IntegrityError:
+                if verbose:
+                    print("error saving entry for " + str(player_id))
 
         engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id='{}'".format(player_id))
 

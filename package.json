@@ -1,0 +1,19 @@
+{
+  "name": "yetanothersoccerdatabase",
+  "version": "1.0.0",
+  "description": "Senior Project related to Soccer team and player statistics and match simulation/prediction with ML.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \\\"No Test Specified\\\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bwilli08/YetAnotherSoccerDatabase.git"
+  },
+  "author": "Brent Williams",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bwilli08/YetAnotherSoccerDatabase/issues"
+  },
+  "homepage": "https://github.com/bwilli08/YetAnotherSoccerDatabase#readme"
+}
