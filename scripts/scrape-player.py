@@ -424,7 +424,8 @@ def backfill_player(fbref_id):
 
             update_db_goalkeeper_stat()
 
-        engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id='{}'".format(fbref_id))
+        engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id=%s", [fbref_id])
+        backfilled_players.append(fbref_id)
 
         if is_new_player:
             cur_player_id += 1
@@ -486,7 +487,7 @@ def backfill_season(fbref_id, current_player):
             print("Finished backfilling " + squad + " (" + season + ")")
 
         engine.execute(
-            "UPDATE ClubSeason SET finished_backfill=true WHERE squad='{}' AND season='{}'".format(squad, season))
+            "UPDATE ClubSeason SET finished_backfill=true WHERE squad=%s AND season=%s", [squad, season])
     elif verbose:
         print("Empty entry found: " + fbref_id)
 
