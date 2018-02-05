@@ -21,6 +21,11 @@ if not set(sys.argv).isdisjoint(['-v', '--verbose']):
 else:
     verbose = False
 
+# Output to application.log flag
+if not set(sys.argv).isdisjoint(['-l', '--logfile']):
+    print("Redirecting output to application.log")
+    sys.stdout = open("application.log", "w")
+
 # URL prefixes
 base_url = "https://fbref.com"
 base_player_url = "/en/players/"
@@ -50,6 +55,7 @@ current_squads = convert_sql_result_to_set("SELECT DISTINCT squad FROM Club", 0)
 partial_seasons = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=false", 0)
 to_do_team_seasons = copy.copy(partial_seasons)
 finished_meta = engine.execute("SELECT player_id,fbref_id FROM Player").fetchall()
+partially_backfilled_players = convert_sql_result_to_list("SELECT t.fbref_id FROM TempPlayer t, Player p WHERE finished_backfill=false AND t.fbref_id=p.fbref_id", 0)
 to_do_players = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=false", 0)
 
 # We need to keep track of this in order to mirror the auto-incrementing MySQL ID
@@ -259,7 +265,7 @@ def add_or_default(obj, func, arr, default):
         arr.append(func(obj))
     else:
         if verbose:
-            print("Defaulting to " + default)
+            print("Defaulting attribute to " + default)
         arr.append(default)
 
 
@@ -286,11 +292,15 @@ def append_stat(stat, stat_name, target_dictionary):
     target_dictionary[stat_name].append(stat)
 
 
-def add_stat(html, stat_name, target_dictionary):
+def add_stat(html, stat_name, dict, default):
     stat = html.find(attrs={"data-stat": stat_name})
 
-    append_stat(stat.get_text(), stat_name, target_dictionary)
-
+    if stat.get_text():
+        append_stat(stat.get_text(), stat_name, dict)
+    elif default:
+        append_stat(default, stat_name, dict)
+    elif verbose:
+        print("Found bad data for stat " + stat_name + " with no default.")
 
 def parse_stat_entry(stat, player_id, fbref_id, isGK):
     target_dictionary = goalkeeper_stat_table if isGK else player_stat_table
@@ -301,21 +311,21 @@ def parse_stat_entry(stat, player_id, fbref_id, isGK):
     if not isGK:
         append_stat(player_id, 'player_id', target_dictionary)
         # Need to check if this season + squad exists, and backfill it if not
-        add_stat(stat, 'season', target_dictionary)
-        add_stat(stat, 'squad', target_dictionary)
-        add_stat(stat, 'comp', target_dictionary)
-        add_stat(stat, 'age', target_dictionary)
-        add_stat(stat, 'games', target_dictionary)
-        add_stat(stat, 'goals', target_dictionary)
-        add_stat(stat, 'assists', target_dictionary)
-        add_stat(stat, 'fouls', target_dictionary)
-        add_stat(stat, 'shots_on_target', target_dictionary)
-        add_stat(stat, 'minutes_per_game', target_dictionary)
-        add_stat(stat, 'cards_yellow', target_dictionary)
-        add_stat(stat, 'cards_red', target_dictionary)
+        add_stat(stat, 'season', target_dictionary, None)
+        add_stat(stat, 'squad', target_dictionary, None)
+        add_stat(stat, 'comp', target_dictionary, None)
+        add_stat(stat, 'age', target_dictionary, None)
+        add_stat(stat, 'games', target_dictionary, None)
+        add_stat(stat, 'goals', target_dictionary, None)
+        add_stat(stat, 'assists', target_dictionary, None)
+        add_stat(stat, 'fouls', target_dictionary, "-1")
+        add_stat(stat, 'shots_on_target', target_dictionary, None)
+        add_stat(stat, 'minutes_per_game', target_dictionary, None)
+        add_stat(stat, 'cards_yellow', target_dictionary, None)
+        add_stat(stat, 'cards_red', target_dictionary, None)
 
-    add_stat(stat, 'games_starts', target_dictionary)
-    add_stat(stat, 'games_subs', target_dictionary)
+    add_stat(stat, 'games_starts', target_dictionary, None)
+    add_stat(stat, 'games_subs', target_dictionary, None)
 
 
 def add_optional_gk_stats():
@@ -333,16 +343,16 @@ def parse_gk_stat_entry(player_id, fbref_id, stat):
     add_club_season_if_not_exists(stat, fbref_id)
 
     append_stat(player_id, 'player_id', goalkeeper_stat_table)
-    add_stat(stat, 'season', goalkeeper_stat_table)
-    add_stat(stat, 'squad', goalkeeper_stat_table)
-    add_stat(stat, 'comp', goalkeeper_stat_table)
-    add_stat(stat, 'age', goalkeeper_stat_table)
-    add_stat(stat, 'games', goalkeeper_stat_table)
-    add_stat(stat, 'minutes_per_game', goalkeeper_stat_table)
-    add_stat(stat, 'cards_yellow', goalkeeper_stat_table)
-    add_stat(stat, 'cards_red', goalkeeper_stat_table)
-    add_stat(stat, 'save_perc', goalkeeper_stat_table)
-    add_stat(stat, 'clean_sheets', goalkeeper_stat_table)
+    add_stat(stat, 'season', goalkeeper_stat_table, None)
+    add_stat(stat, 'squad', goalkeeper_stat_table, None)
+    add_stat(stat, 'comp', goalkeeper_stat_table, None)
+    add_stat(stat, 'age', goalkeeper_stat_table, None)
+    add_stat(stat, 'games', goalkeeper_stat_table, None)
+    add_stat(stat, 'minutes_per_game', goalkeeper_stat_table, None)
+    add_stat(stat, 'cards_yellow', goalkeeper_stat_table, None)
+    add_stat(stat, 'cards_red', goalkeeper_stat_table, None)
+    add_stat(stat, 'save_perc', goalkeeper_stat_table, None)
+    add_stat(stat, 'clean_sheets', goalkeeper_stat_table, None)
 
 
 def tuple_list_contains(lst, val, ndx):
@@ -396,11 +406,7 @@ def backfill_player(fbref_id):
             for stat in stats:
                 parse_stat_entry(stat, player_id, fbref_id, False)
 
-            try:
-                update_db_outfield_player_stat()
-            except mysql.connector.errors.IntegrityError:
-                if verbose:
-                    print("error saving entry for " + str(player_id))
+            update_db_outfield_player_stat()
         else:
             gk_table = soup.find('table', attrs={"id": "stats_keeper"})
             if gk_table is None:
@@ -416,11 +422,7 @@ def backfill_player(fbref_id):
                 else:
                     add_optional_gk_stats()
 
-            try:
-                update_db_goalkeeper_stat()
-            except mysql.connector.errors.IntegrityError:
-                if verbose:
-                    print("error saving entry for " + str(player_id))
+            update_db_goalkeeper_stat()
 
         engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id='{}'".format(fbref_id))
 
@@ -512,5 +514,12 @@ if verbose:
 #populate_team_seasons()
 
 populate_club_and_temp_player_tables()
+
+while partially_backfilled_players:
+    fbref_id = partially_backfilled_players.pop()
+    backfill_player(fbref_id)
+    if fbref_id in to_do_players:
+        to_do_players.remove(fbref_id)
+
 while to_do_players:
     backfill_player(to_do_players.pop())
