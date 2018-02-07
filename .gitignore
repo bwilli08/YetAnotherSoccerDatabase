@@ -3,4 +3,5 @@
 node_modules/
 application.log
 scripts/databaseinfo.py
+*__pycache__*
 *.iml

@@ -22,6 +22,15 @@ if not set(sys.argv).isdisjoint(['-v', '--verbose']):
 else:
     verbose = False
 
+# Very Verbose Flag
+very_verbose = None
+if not set(sys.argv).isdisjoint(['--v', '--very-verbose']):
+    print("Very verbose flag set to true, printing a lot of log messages.")
+    verbose = True
+    very_verbose = True
+else:
+    very_verbose = False
+
 # Output to application.log flag
 if not set(sys.argv).isdisjoint(['-l', '--logfile']):
     print("Redirecting output to application.log")
@@ -477,13 +486,15 @@ def check_for_players(table, current_player):
                 temp_player_table['fbref_id'].append(player_href)
                 temp_player_table['finished_backfill'].append(False)
 
+    num_players = len(temp_player_table['fbref_id'])
+    if verbose and num_players:
+        print("Adding " + str(num_players) + " players to TempPlayer table.")
+
     update_db_temp_player()
 
 
 def backfill_season(fbref_id, current_player):
-    global verbose
-
-    if verbose:
+    if very_verbose:
         print("Backfilling " + fbref_id)
 
     url = base_url + fbref_id
@@ -499,7 +510,7 @@ def backfill_season(fbref_id, current_player):
         season = fbref_id.split("/")[4]
         squad = meta[1].get_text()
 
-        if verbose:
+        if very_verbose:
             print("Adding " + squad + " (" + season + ") to tables. {" + fbref_id + "}")
 
         if squad not in current_squads:
@@ -522,12 +533,12 @@ def backfill_season(fbref_id, current_player):
         if gk_table is not None:
             check_for_players(gk_table, current_player)
 
-        if verbose:
+        if very_verbose:
             print("Finished backfilling " + squad + " (" + season + ")")
 
         engine.execute(
             "UPDATE ClubSeason SET finished_backfill=true WHERE squad=%s AND season=%s", [squad, season])
-    elif verbose:
+    elif very_verbose:
         print("Empty entry found: " + fbref_id)
 
         garbage_season_table['fbref_id'].append(fbref_id)
@@ -535,8 +546,6 @@ def backfill_season(fbref_id, current_player):
 
 
 def populate_club_and_temp_player_tables():
-    global verbose
-
     while to_do_team_seasons:
         fbref_id = to_do_team_seasons.pop()
         backfill_season(fbref_id, None)
