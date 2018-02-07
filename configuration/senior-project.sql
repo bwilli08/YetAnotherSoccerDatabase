@@ -102,7 +102,7 @@ CREATE TABLE GoalkeeperStat (
   minutes_per_game INTEGER,
 
   # Goalkeeper Stats
-  save_perc        DECIMAL,
+  save_perc        DECIMAL(5,4),
   clean_sheets     INTEGER,
   cards_yellow     INTEGER,
   cards_red        INTEGER,

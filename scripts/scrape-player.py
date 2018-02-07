@@ -224,7 +224,7 @@ def clear_db_goalkeeper_stat():
 
 
 def update_db_goalkeeper_stat():
-    add_to_database("GoalkeeperPlayerStat", pandas.DataFrame(goalkeeper_stat_table))
+    add_to_database("GoalkeeperStat", pandas.DataFrame(goalkeeper_stat_table))
 
     clear_db_goalkeeper_stat()
 
@@ -542,6 +542,8 @@ while partially_backfilled_players:
     backfill_player(fbref_id)
     if fbref_id in to_do_players:
         to_do_players.remove(fbref_id)
+
+backfill_player("/en/players/20877ae0/")
 
 while to_do_players:
     backfill_player(to_do_players.pop())
