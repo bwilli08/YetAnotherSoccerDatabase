@@ -55,10 +55,9 @@ current_squads = convert_sql_result_to_set("SELECT DISTINCT squad FROM Club", 0)
 partial_seasons = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM ClubSeason WHERE finished_backfill=false", 0)
 to_do_team_seasons = copy.copy(partial_seasons)
 finished_meta = engine.execute("SELECT player_id,fbref_id FROM Player").fetchall()
-partially_backfilled_players = convert_sql_result_to_list("SELECT t.fbref_id FROM TempPlayer t, Player p WHERE finished_backfill=false AND t.fbref_id=p.fbref_id", 0)
+partially_backfilled_players = convert_sql_result_to_list(
+    "SELECT t.fbref_id FROM TempPlayer t, Player p WHERE finished_backfill=false AND t.fbref_id=p.fbref_id", 0)
 to_do_players = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=false", 0)
-
-failed_players = []
 
 # We need to keep track of this in order to mirror the auto-incrementing MySQL ID
 max_player_id_res = engine.execute("SELECT MAX(player_id) from PLAYER").fetchone()
@@ -165,6 +164,7 @@ player_stat_table = {
     'cards_red': [],
     'shots_on_target': []
 }
+
 
 def clear_db_outfield_player_stat():
     player_stat_table['player_id'].clear()
@@ -315,6 +315,7 @@ def add_stat(html, stat_name, dict, default):
     elif verbose:
         print("Found bad data for stat " + stat_name + " with no default.")
 
+
 def parse_stat_entry(stat, player_id, fbref_id, isGK):
     target_dictionary = goalkeeper_stat_table if isGK else player_stat_table
 
@@ -447,16 +448,16 @@ def backfill_player(fbref_id):
 
         if is_new_player:
             cur_player_id += 1
-    except mysql.connector.errors.IntegrityError:
-        print("~~~Error saving stats for " + str(fbref_id) + ". Clearing tables and hopefully retrying later.")
+
+    except (AttributeError, mysql.connector.errors.IntegrityError, requests.exceptions.ConnectionError) as e:
+        print("~~~Error saving stats for " + str(fbref_id) + ". Clearing tables and adding to failed_players.log file.")
+        clear_meta_dict()
         clear_db_goalkeeper_stat()
         clear_db_outfield_player_stat()
-        failed_players.append(fbref_id)
-        return
-    except requests.exceptions.ConnectionError:
-        print("~~~Could not read " + str(fbref_id) + ". Hopefully retrying later. Sleeping for five seconds.")
-        time.sleep(5)
-        return
+        with open("failed_players.log", "a") as f:
+            f.write(str(fbref_id) + "\n")
+        with open("errors.log", "a") as f:
+            f.write(e)
 
 
 def check_for_players(table, current_player):
@@ -538,14 +539,19 @@ def populate_club_and_temp_player_tables():
 
 ##### Backfill Core Workflow #####
 if verbose:
-    print("Backfilled seasons: " + str(len(backfilled_seasons)) + " (" + str(len(garbage_seasons)) + " garbage seasons)")
+    print("--------------------------------------------------")
+    print("Backfilled seasons: " + str(len(backfilled_seasons)))
+    print("Garbage seasons: " + str(len(garbage_seasons)))
     print("Partially backfilled seasons: " + str(partial_seasons))
+    print()
     print("Backfilled players: " + str(len(backfilled_players)))
     print("Remaining players: " + str(len(to_do_players)))
     print("Current player id: " + str(cur_player_id))
+    print("--------------------------------------------------\n")
 
-# No longer required since we've parsed through the entire club and season lists on the fbref website
-#populate_team_seasons()
+# No longer required since we've parsed through the entire club and season lists on the fbref website.
+# Keep around for emergencies and legacy purposes
+# populate_team_seasons()
 
 populate_club_and_temp_player_tables()
 
@@ -555,9 +561,5 @@ while partially_backfilled_players:
     if fbref_id in to_do_players:
         to_do_players.remove(fbref_id)
 
-backfill_player("/en/players/20877ae0/")
-
 while to_do_players:
     backfill_player(to_do_players.pop())
-
-print(failed_players)
