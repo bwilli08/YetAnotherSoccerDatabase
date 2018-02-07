@@ -149,6 +149,7 @@ player_stat_table = {
     'player_id': [],
     'season': [],
     'squad': [],
+    'season_fbref': [],
     'comp': [],
     'age': [],
     'games': [],
@@ -163,13 +164,11 @@ player_stat_table = {
     'shots_on_target': []
 }
 
-
-def update_db_outfield_player_stat():
-    add_to_database("OutfieldPlayerStat", pandas.DataFrame(player_stat_table))
-
+def clear_db_outfield_player_stat():
     player_stat_table['player_id'].clear()
     player_stat_table['season'].clear()
     player_stat_table['squad'].clear()
+    player_stat_table['season_fbref'].clear()
     player_stat_table['comp'].clear()
     player_stat_table['age'].clear()
     player_stat_table['games'].clear()
@@ -184,10 +183,16 @@ def update_db_outfield_player_stat():
     player_stat_table['shots_on_target'].clear()
 
 
+def update_db_outfield_player_stat():
+    add_to_database("OutfieldPlayerStat", pandas.DataFrame(player_stat_table))
+    clear_db_outfield_player_stat()
+
+
 goalkeeper_stat_table = {
     'player_id': [],
     'season': [],
     'squad': [],
+    'season_fbref': [],
     'comp': [],
     'age': [],
     'games': [],
@@ -201,12 +206,11 @@ goalkeeper_stat_table = {
 }
 
 
-def update_db_goalkeeper_stat():
-    add_to_database("GoalkeeperPlayerStat", pandas.DataFrame(goalkeeper_stat_table))
-
+def clear_db_goalkeeper_stat():
     goalkeeper_stat_table['player_id'].clear()
     goalkeeper_stat_table['season'].clear()
     goalkeeper_stat_table['squad'].clear()
+    goalkeeper_stat_table['season_fbref'].clear()
     goalkeeper_stat_table['comp'].clear()
     goalkeeper_stat_table['age'].clear()
     goalkeeper_stat_table['games'].clear()
@@ -217,6 +221,12 @@ def update_db_goalkeeper_stat():
     goalkeeper_stat_table['clean_sheets'].clear()
     goalkeeper_stat_table['cards_yellow'].clear()
     goalkeeper_stat_table['cards_red'].clear()
+
+
+def update_db_goalkeeper_stat():
+    add_to_database("GoalkeeperPlayerStat", pandas.DataFrame(goalkeeper_stat_table))
+
+    clear_db_goalkeeper_stat()
 
 
 ##### Backfill Methods #####
@@ -294,9 +304,10 @@ def append_stat(stat, stat_name, target_dictionary):
 
 def add_stat(html, stat_name, dict, default):
     stat = html.find(attrs={"data-stat": stat_name})
+    stat_val = stat.get_text()
 
-    if stat.get_text():
-        append_stat(stat.get_text(), stat_name, dict)
+    if stat_val:
+        append_stat(stat_val, stat_name, dict)
     elif default:
         append_stat(default, stat_name, dict)
     elif verbose:
@@ -305,7 +316,7 @@ def add_stat(html, stat_name, dict, default):
 def parse_stat_entry(stat, player_id, fbref_id, isGK):
     target_dictionary = goalkeeper_stat_table if isGK else player_stat_table
 
-    add_club_season_if_not_exists(stat, fbref_id)
+    season_href = add_club_season_if_not_exists(stat, fbref_id)
 
     # Don't add any of these stats for goalkeepers, since they're found in the GK table
     if not isGK:
@@ -313,6 +324,7 @@ def parse_stat_entry(stat, player_id, fbref_id, isGK):
         # Need to check if this season + squad exists, and backfill it if not
         add_stat(stat, 'season', target_dictionary, None)
         add_stat(stat, 'squad', target_dictionary, None)
+        append_stat(season_href, 'season_fbref', target_dictionary)
         add_stat(stat, 'comp', target_dictionary, None)
         add_stat(stat, 'age', target_dictionary, None)
         add_stat(stat, 'games', target_dictionary, None)
@@ -336,15 +348,19 @@ def add_optional_gk_stats():
 def add_club_season_if_not_exists(html, fbref_id):
     href = html.find(attrs={"data-stat": "squad"}).find('a', href=True)
     if href is not None and hasattr(href, 'href'):
-        backfill_season(href['href'], fbref_id)
+        actual_href = href['href']
+        if actual_href not in backfilled_seasons:
+            backfill_season(actual_href, fbref_id)
+        return actual_href
 
 
 def parse_gk_stat_entry(player_id, fbref_id, stat):
-    add_club_season_if_not_exists(stat, fbref_id)
+    season_href = add_club_season_if_not_exists(stat, fbref_id)
 
     append_stat(player_id, 'player_id', goalkeeper_stat_table)
     add_stat(stat, 'season', goalkeeper_stat_table, None)
     add_stat(stat, 'squad', goalkeeper_stat_table, None)
+    append_stat(season_href, 'season_fbref', goalkeeper_stat_table)
     add_stat(stat, 'comp', goalkeeper_stat_table, None)
     add_stat(stat, 'age', goalkeeper_stat_table, None)
     add_stat(stat, 'games', goalkeeper_stat_table, None)
@@ -429,8 +445,13 @@ def backfill_player(fbref_id):
 
         if is_new_player:
             cur_player_id += 1
+    #except mysql.connector.errors.IntegrityError:
+    #    print("~~~Error saving stats for " + str(fbref_id) + ". Clearing tables and hopefully retrying later.")
+    #    clear_db_goalkeeper_stat()
+    #    clear_db_outfield_player_stat()
+    #    return
     except requests.exceptions.ConnectionError:
-        print("Could not read " + player_id + ". Hopefully retrying later. Sleeping for five seconds.")
+        print("~~~Could not read " + str(fbref_id) + ". Hopefully retrying later. Sleeping for five seconds.")
         time.sleep(5)
         return
 
@@ -450,7 +471,7 @@ def backfill_season(fbref_id, current_player):
     # Since the webpage exists even if the season+squad is invalid, we need to check if the stats table is present
     if stat_table is not None:
         meta = soup.find('div', attrs={"class": "squads"}).find('h1', itemprop="name").find_all('span')
-        season = meta[0].get_text()
+        season = fbref_id.split("/")[4]
         squad = meta[1].get_text()
 
         if verbose:

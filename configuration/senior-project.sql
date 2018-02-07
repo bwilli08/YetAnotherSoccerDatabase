@@ -46,7 +46,7 @@ CREATE TABLE ClubSeason (
   fbref_id          VARCHAR(64),
   finished_backfill BOOLEAN,
 
-  PRIMARY KEY (season, squad),
+  PRIMARY KEY (season, squad, fbref_id),
   FOREIGN KEY (squad) REFERENCES Club(squad)
 );
 
@@ -55,6 +55,7 @@ CREATE TABLE OutfieldPlayerStat (
   player_id        INTEGER,
   season           VARCHAR(10),
   squad            VARCHAR(64),
+  season_fbref     VARCHAR(64),
 
   # Descriptive Information
   comp             VARCHAR(64),
@@ -75,8 +76,8 @@ CREATE TABLE OutfieldPlayerStat (
   shots_on_target  INTEGER,
 
   PRIMARY KEY (id),
-  FOREIGN KEY PlayerStat (player_id) REFERENCES Player (player_id),
-  FOREIGN KEY PlayerStat (season, squad) REFERENCES ClubSeason (season, squad),
+  FOREIGN KEY OutfieldPlayerStat (player_id) REFERENCES Player (player_id),
+  FOREIGN KEY OutfieldPlayerStat (season, squad, season_fbref) REFERENCES ClubSeason (season, squad, fbref_id),
 
   INDEX (player_id),
   INDEX (squad),
@@ -88,6 +89,7 @@ CREATE TABLE GoalkeeperStat (
   player_id        INTEGER,
   season           VARCHAR(10),
   squad            VARCHAR(64),
+  season_fbref     VARCHAR(64),
 
   # Descriptive Information
   comp             VARCHAR(64),
@@ -106,8 +108,8 @@ CREATE TABLE GoalkeeperStat (
   cards_red        INTEGER,
 
   PRIMARY KEY (id),
-  FOREIGN KEY PlayerStat (player_id) REFERENCES Player (player_id),
-  FOREIGN KEY PlayerStat (season, squad) REFERENCES ClubSeason (season, squad),
+  FOREIGN KEY GoalkeeperStat (player_id) REFERENCES Player (player_id),
+  FOREIGN KEY GoalkeeperStat (season, squad, season_fbref) REFERENCES ClubSeason (season, squad, fbref_id),
 
   INDEX (player_id),
   INDEX (squad),
