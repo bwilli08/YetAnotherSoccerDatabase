@@ -2,4 +2,5 @@
 .idea/
 node_modules/
 application.log
+scripts/databaseinfo.py
 *.iml

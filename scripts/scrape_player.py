@@ -10,6 +10,7 @@ import requests
 import pandas
 import datetime
 import copy
+import databaseinfo
 
 ##### Global Variables #####
 
@@ -32,7 +33,11 @@ base_player_url = "/en/players/"
 base_squad_url = "/en/squads/"
 
 # engine for sql queries
-engine = create_engine('mysql+mysqlconnector://wilbren:Aug9th95@localhost/seniorproject')
+engine = create_engine('mysql+mysqlconnector://{}:{}@{}/{}'.format(
+    databaseinfo.db_user(),
+    databaseinfo.db_passwd(),
+    databaseinfo.db_host(),
+    databaseinfo.db_name()))
 
 
 def convert_sql_result_to_list(statement, ndx):
