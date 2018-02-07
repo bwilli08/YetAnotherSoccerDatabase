@@ -58,6 +58,8 @@ finished_meta = engine.execute("SELECT player_id,fbref_id FROM Player").fetchall
 partially_backfilled_players = convert_sql_result_to_list("SELECT t.fbref_id FROM TempPlayer t, Player p WHERE finished_backfill=false AND t.fbref_id=p.fbref_id", 0)
 to_do_players = convert_sql_result_to_set("SELECT DISTINCT fbref_id FROM TempPlayer WHERE finished_backfill=false", 0)
 
+failed_players = []
+
 # We need to keep track of this in order to mirror the auto-incrementing MySQL ID
 max_player_id_res = engine.execute("SELECT MAX(player_id) from PLAYER").fetchone()
 cur_player_id = max_player_id_res[0] + 1 if max_player_id_res[0] is not None else 1
@@ -445,15 +447,31 @@ def backfill_player(fbref_id):
 
         if is_new_player:
             cur_player_id += 1
-    #except mysql.connector.errors.IntegrityError:
-    #    print("~~~Error saving stats for " + str(fbref_id) + ". Clearing tables and hopefully retrying later.")
-    #    clear_db_goalkeeper_stat()
-    #    clear_db_outfield_player_stat()
-    #    return
+    except mysql.connector.errors.IntegrityError:
+        print("~~~Error saving stats for " + str(fbref_id) + ". Clearing tables and hopefully retrying later.")
+        clear_db_goalkeeper_stat()
+        clear_db_outfield_player_stat()
+        failed_players.append(fbref_id)
+        return
     except requests.exceptions.ConnectionError:
         print("~~~Could not read " + str(fbref_id) + ". Hopefully retrying later. Sleeping for five seconds.")
         time.sleep(5)
         return
+
+
+def check_for_players(table, current_player):
+    players = table.find('tbody').find_all('tr')
+
+    for player in players:
+        href = player.find('a', href=True)
+        if href is not None and hasattr(href, 'href'):
+            player_href = href['href']
+            if player_href not in backfilled_players and player_href not in to_do_players and player_href != current_player:
+                to_do_players.add(player_href)
+                temp_player_table['fbref_id'].append(player_href)
+                temp_player_table['finished_backfill'].append(False)
+
+    update_db_temp_player()
 
 
 def backfill_season(fbref_id, current_player):
@@ -467,9 +485,10 @@ def backfill_season(fbref_id, current_player):
     # request the webpage and transform it through BeautifulSoup.
     soup = BeautifulSoup(requests.get(url).text)
     stat_table = soup.find('table', attrs={"id": "stats"})
+    gk_table = soup.find('table', attrs={"id": "stats_keeper"})
 
     # Since the webpage exists even if the season+squad is invalid, we need to check if the stats table is present
-    if stat_table is not None:
+    if stat_table is not None or gk_table is not None:
         meta = soup.find('div', attrs={"class": "squads"}).find('h1', itemprop="name").find_all('span')
         season = fbref_id.split("/")[4]
         squad = meta[1].get_text()
@@ -491,18 +510,11 @@ def backfill_season(fbref_id, current_player):
                 update_db_club_season()
             backfilled_seasons.append(fbref_id)
 
-        players = stat_table.find('tbody').find_all('tr')
+        if stat_table is not None:
+            check_for_players(stat_table, current_player)
 
-        for player in players:
-            href = player.find('a', href=True)
-            if href is not None and hasattr(href, 'href'):
-                player_href = href['href']
-                if player_href not in backfilled_players and player_href not in to_do_players and player_href != current_player:
-                    to_do_players.add(player_href)
-                    temp_player_table['fbref_id'].append(player_href)
-                    temp_player_table['finished_backfill'].append(False)
-
-        update_db_temp_player()
+        if gk_table is not None:
+            check_for_players(gk_table, current_player)
 
         if verbose:
             print("Finished backfilling " + squad + " (" + season + ")")
@@ -526,7 +538,7 @@ def populate_club_and_temp_player_tables():
 
 ##### Backfill Core Workflow #####
 if verbose:
-    print("Backfilled seasons: " + str(len(backfilled_seasons)))
+    print("Backfilled seasons: " + str(len(backfilled_seasons)) + " (" + str(len(garbage_seasons)) + " garbage seasons)")
     print("Partially backfilled seasons: " + str(partial_seasons))
     print("Backfilled players: " + str(len(backfilled_players)))
     print("Remaining players: " + str(len(to_do_players)))
@@ -547,3 +559,5 @@ backfill_player("/en/players/20877ae0/")
 
 while to_do_players:
     backfill_player(to_do_players.pop())
+
+print(failed_players)
