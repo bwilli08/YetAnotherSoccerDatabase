@@ -2,6 +2,7 @@
 .idea/
 node_modules/
 application.log
-scripts/databaseinfo.py
+internal/*
+internal/.*
 *__pycache__*
 *.iml

@@ -1,12 +1,13 @@
 const express = require("express");
 const fs = require("fs");
 const mysql = require("mysql");
+const db_info = require("internal/databaseinfo");
 
 const db = mysql.createConnection({
-    host: "localhost",
-    user: "wilbren",
-    password: "Aug9th95",
-    database: "seniorproject"
+    host: db_info.db_host(),
+    user: db_info.db_user(),
+    password: db_info.db_passwd(),
+    database: db_info.db_name()
 });
 
 const app = express();

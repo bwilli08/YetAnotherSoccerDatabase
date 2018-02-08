@@ -1,16 +1,15 @@
 #!/usr/bin/python3
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
+import copy
+import mysql.connector
+import pandas
+import requests
+import sys
 from bs4 import BeautifulSoup
 from sqlalchemy import create_engine
-import mysql.connector
-import time
-import sys
-import requests
-import pandas
-import datetime
-import copy
-import databaseinfo
+
+from internal import databaseinfo
 
 ##### Global Variables #####
 
