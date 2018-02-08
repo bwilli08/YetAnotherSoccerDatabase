@@ -358,8 +358,8 @@ def parse_stat_entry(stat, player_id, fbref_id, isGK):
 
 
 def add_optional_gk_stats():
-    append_stat(None, 'games_starts', goalkeeper_stat_table)
-    append_stat(None, 'games_subs', goalkeeper_stat_table)
+    append_stat("-1", 'games_starts', goalkeeper_stat_table)
+    append_stat("-1", 'games_subs', goalkeeper_stat_table)
 
 
 def add_club_season_if_not_exists(html, fbref_id):
@@ -407,6 +407,7 @@ def backfill_player(fbref_id):
         global cur_player_id
         is_new_player = None
         player_id = None
+        updated = False
         if tuple_list_contains(finished_meta, fbref_id, 1):
             player_id = tuple_list_get(finished_meta, fbref_id, 1)[0]
             is_new_player = False
@@ -426,6 +427,7 @@ def backfill_player(fbref_id):
         position = player_table['position'][-1]
         if is_new_player:
             update_db_player()
+            updated = True
             finished_meta.append((player_id, fbref_id))
         else:
             clear_meta_dict()
@@ -442,20 +444,23 @@ def backfill_player(fbref_id):
             update_db_outfield_player_stat()
         else:
             gk_table = soup.find('table', attrs={"id": "stats_keeper"})
-            if gk_table is None:
-                # Some GKs don't have stats. Ignore these players.
-                return
-            gk_stats = gk_table.find_all('tr')[1:]
-            outfield_stats = soup.find('table', attrs={"id": "stats"}).find_all('tr')[1:]
+            # Some GKs don't have stats. Ignore these players.
+            if gk_table is not None:
+                gk_stats = gk_table.find_all('tr')[1:]
 
-            for ndx in range(0, len(gk_stats)):
-                parse_gk_stat_entry(player_id, fbref_id, gk_stats[ndx])
-                if len(outfield_stats) > ndx:
-                    parse_stat_entry(outfield_stats[ndx], player_id, fbref_id, True)
-                else:
-                    add_optional_gk_stats()
+                regular_stats = soup.find('table', attrs={"id": "stats"})
+                outfield_stats = None
+                if regular_stats is not None:
+                    outfield_stats = regular_stats.find_all('tr')[1:]
 
-            update_db_goalkeeper_stat()
+                for ndx in range(0, len(gk_stats)):
+                    parse_gk_stat_entry(player_id, fbref_id, gk_stats[ndx])
+                    if outfield_stats is not None and len(outfield_stats) > ndx:
+                        parse_stat_entry(outfield_stats[ndx], player_id, fbref_id, True)
+                    else:
+                        add_optional_gk_stats()
+
+                update_db_goalkeeper_stat()
 
         engine.execute("UPDATE TempPlayer SET finished_backfill=true WHERE fbref_id=%s", [fbref_id])
         backfilled_players.append(fbref_id)
@@ -468,10 +473,14 @@ def backfill_player(fbref_id):
         clear_meta_dict()
         clear_db_goalkeeper_stat()
         clear_db_outfield_player_stat()
+
+        if is_new_player and updated:
+            cur_player_id += 1
+
         with open("failed_players.log", "a") as f:
             f.write(str(fbref_id) + "\n")
         with open("errors.log", "a") as f:
-            f.write(e)
+            f.write(str(e) + "\n")
 
 
 def check_for_players(table, current_player):

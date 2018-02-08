@@ -8,12 +8,12 @@ USE SeniorProject;
 
 
 CREATE TABLE Player (
-  player_id         INTEGER NOT NULL,
-  name              VARCHAR(64),
-  date_of_birth     DATE,
-  position          VARCHAR(10),
-  height            INTEGER,
-  fbref_id          VARCHAR(64),
+  player_id     INTEGER NOT NULL,
+  name          VARCHAR(64),
+  date_of_birth DATE,
+  position      VARCHAR(10),
+  height        INTEGER,
+  fbref_id      VARCHAR(64),
 
   PRIMARY KEY (player_id),
 
@@ -35,7 +35,7 @@ CREATE TABLE Club (
 );
 
 CREATE TABLE GarbageSeason (
-  fbref_id  VARCHAR(64),
+  fbref_id VARCHAR(64),
 
   PRIMARY KEY (fbref_id)
 );
@@ -47,7 +47,7 @@ CREATE TABLE ClubSeason (
   finished_backfill BOOLEAN,
 
   PRIMARY KEY (season, squad, fbref_id),
-  FOREIGN KEY (squad) REFERENCES Club(squad)
+  FOREIGN KEY (squad) REFERENCES Club (squad)
 );
 
 CREATE TABLE OutfieldPlayerStat (
@@ -102,7 +102,7 @@ CREATE TABLE GoalkeeperStat (
   minutes_per_game INTEGER,
 
   # Goalkeeper Stats
-  save_perc        DECIMAL(5,4),
+  save_perc        DECIMAL(5, 4),
   clean_sheets     INTEGER,
   cards_yellow     INTEGER,
   cards_red        INTEGER,
