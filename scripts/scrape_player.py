@@ -9,7 +9,8 @@ import sys
 from bs4 import BeautifulSoup
 from sqlalchemy import create_engine
 
-from internal import databaseinfo
+sys.path.insert(0, './internal')
+import databaseinfo
 
 ##### Global Variables #####
 
