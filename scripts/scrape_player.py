@@ -24,7 +24,7 @@ else:
 
 # Very Verbose Flag
 very_verbose = None
-if not set(sys.argv).isdisjoint(['--v', '--very-verbose']):
+if not set(sys.argv).isdisjoint(['-vv', '--very-verbose']):
     print("Very verbose flag set to true, printing a lot of log messages.")
     verbose = True
     very_verbose = True
@@ -559,17 +559,25 @@ def populate_club_and_temp_player_tables():
         fbref_id = to_do_team_seasons.pop()
         backfill_season(fbref_id, None)
 
+    size = len(partial_seasons)
+    x = 0
+    while partial_seasons and x < size:
+        fbref_id = partial_seasons.pop()
+        backfill_season(fbref_id, None)
+        x += 1
+
 
 ##### Backfill Core Workflow #####
 if verbose:
     print("--------------------------------------------------")
     print("Backfilled seasons: " + str(len(backfilled_seasons)))
     print("Garbage seasons: " + str(len(garbage_seasons)))
-    print("Partially backfilled seasons: " + str(partial_seasons))
+    print("Partially backfilled seasons: " + str(len(partial_seasons)))
     print()
     print("Backfilled players: " + str(len(backfilled_players)))
-    print("Remaining players: " + str(len(to_do_players)))
+    print("Partially backfilled players: " + str(len(partially_backfilled_players)))
     print("Current player id: " + str(cur_player_id))
+    print("Remaining players: " + str(len(to_do_players)))
     print("--------------------------------------------------\n")
 
 # No longer required since we've parsed through the entire club and season lists on the fbref website.

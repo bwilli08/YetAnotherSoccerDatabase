@@ -1,7 +1,7 @@
 const express = require("express");
 const fs = require("fs");
 const mysql = require("mysql");
-const db_info = require("internal/databaseinfo");
+const db_info = require('./internal/database-info');
 
 const db = mysql.createConnection({
     host: db_info.db_host(),
