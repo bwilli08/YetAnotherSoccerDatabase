@@ -325,6 +325,8 @@ def add_stat(html, stat_name, dict, default):
     if stat_val:
         append_stat(stat_val, stat_name, dict)
     elif default:
+        if verbose:
+            print("Defaulting " + stat_name + " to " + default)
         append_stat(default, stat_name, dict)
     elif verbose:
         print("Found bad data for stat " + stat_name + " with no default.")
@@ -349,7 +351,7 @@ def parse_stat_entry(stat, player_id, fbref_id, isGK):
         add_stat(stat, 'assists', target_dictionary, None)
         add_stat(stat, 'fouls', target_dictionary, "-1")
         add_stat(stat, 'shots_on_target', target_dictionary, None)
-        add_stat(stat, 'minutes_per_game', target_dictionary, None)
+        add_stat(stat, 'minutes_per_game', target_dictionary, "0")
         add_stat(stat, 'cards_yellow', target_dictionary, None)
         add_stat(stat, 'cards_red', target_dictionary, None)
 
@@ -381,7 +383,7 @@ def parse_gk_stat_entry(player_id, fbref_id, stat):
     add_stat(stat, 'comp', goalkeeper_stat_table, None)
     add_stat(stat, 'age', goalkeeper_stat_table, None)
     add_stat(stat, 'games', goalkeeper_stat_table, None)
-    add_stat(stat, 'minutes_per_game', goalkeeper_stat_table, None)
+    add_stat(stat, 'minutes_per_game', goalkeeper_stat_table, "0")
     add_stat(stat, 'cards_yellow', goalkeeper_stat_table, None)
     add_stat(stat, 'cards_red', goalkeeper_stat_table, None)
     add_stat(stat, 'save_perc', goalkeeper_stat_table, None)
@@ -435,13 +437,17 @@ def backfill_player(fbref_id):
         # Check for goalkeepers and parse them differently
         if position != "GK":
             # Get stats table, ignore first row since its headers
-            stats = soup.find('table', attrs={"id": "stats"}).find_all('tr')[1:]
+            stats_table = soup.find('table', attrs={"id": "stats"})
 
-            # Parse through each year of the player's career
-            for stat in stats:
-                parse_stat_entry(stat, player_id, fbref_id, False)
+            # There are some players whose stats are messed up, ignore these
+            if stats_table is not None:
+                stats = stats_table.find_all('tr')[1:]
 
-            update_db_outfield_player_stat()
+                # Parse through each year of the player's career
+                for stat in stats:
+                    parse_stat_entry(stat, player_id, fbref_id, False)
+
+                update_db_outfield_player_stat()
         else:
             gk_table = soup.find('table', attrs={"id": "stats_keeper"})
             # Some GKs don't have stats. Ignore these players.
