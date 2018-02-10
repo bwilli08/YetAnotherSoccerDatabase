@@ -83,7 +83,6 @@ class PlayerSearch extends React.Component {
                         </th>
                     </tr>
                     <tr>
-                        <th className="eight wide">Description</th>
                         <th>Name</th>
                         <th>Date of Birth</th>
                         <th>Position</th>
