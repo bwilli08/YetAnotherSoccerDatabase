@@ -38,7 +38,6 @@ app.get("/search/teams", (req, res) => {
         console.log(result);
 
         res.json(result);
-        return
     });
 });
 
@@ -53,7 +52,7 @@ app.get("/search/players", (req, res) => {
         return;
     }
 
-    qry = `SELECT * FROM Player WHERE name LIKE '${name}%'`;
+    qry = `SELECT * FROM Player WHERE name LIKE '%${name}%' ORDER BY name ASC`;
 
     console.log(qry);
 
@@ -62,7 +61,28 @@ app.get("/search/players", (req, res) => {
         console.log(result);
 
         res.json(result);
-        return
+    });
+});
+
+app.get("/club-stats", (req, res) => {
+    const club = req.query.club;
+
+    if (!club) {
+        res.json({
+            error: "Missing required parameter `club`"
+        });
+        return;
+    }
+
+    qry = `SELECT * FROM ClubSeason WHERE squad LIKE '${club}%'`;
+
+    console.log(qry);
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+        console.log(result);
+
+        res.json(result);
     });
 });
 
@@ -101,8 +121,7 @@ app.get("/player-stats", (req, res) => {
                 if (err) throw err;
                 console.log("Result: " + result);
 
-                res.json(result)
-                return;
+                res.json(result);
             });
     });
 });

@@ -29,33 +29,36 @@ CREATE TABLE TempPlayer (
 );
 
 CREATE TABLE Club (
-  squad VARCHAR(64),
+  # "/en/squads/{club_id}/{season}"
+  club_id       VARCHAR(10),
+  club_name     VARCHAR(64),
 
-  PRIMARY KEY (squad)
+  PRIMARY KEY (club_id),
+  INDEX (club_name)
 );
 
 CREATE TABLE GarbageSeason (
-  fbref_id VARCHAR(64),
+  club_id   VARCHAR(10),
+  season    VARCHAR(10),
 
-  PRIMARY KEY (fbref_id)
+  PRIMARY KEY (club_id, season),
+  FOREIGN KEY (club_id) REFERENCES Club (club_id)
 );
 
 CREATE TABLE ClubSeason (
+  season_id         INTEGER AUTO_INCREMENT PRIMARY KEY,
+  club_id           VARCHAR(10),
   season            VARCHAR(10),
-  squad             VARCHAR(64),
-  fbref_id          VARCHAR(64),
+  comp              VARCHAR(64),
   finished_backfill BOOLEAN,
 
-  PRIMARY KEY (season, squad, fbref_id),
-  FOREIGN KEY (squad) REFERENCES Club (squad)
+  FOREIGN KEY (club_id) REFERENCES Club (club_id)
 );
 
 CREATE TABLE OutfieldPlayerStat (
   id               INTEGER NOT NULL  AUTO_INCREMENT,
   player_id        INTEGER,
-  season           VARCHAR(10),
-  squad            VARCHAR(64),
-  season_fbref     VARCHAR(64),
+  season_id        INTEGER,
 
   # Descriptive Information
   comp             VARCHAR(64),
@@ -77,19 +80,15 @@ CREATE TABLE OutfieldPlayerStat (
 
   PRIMARY KEY (id),
   FOREIGN KEY OutfieldPlayerStat (player_id) REFERENCES Player (player_id),
-  FOREIGN KEY OutfieldPlayerStat (season, squad, season_fbref) REFERENCES ClubSeason (season, squad, fbref_id),
+  FOREIGN KEY OutfieldPlayerStat (season_id) REFERENCES ClubSeason (season_id),
 
-  INDEX (player_id),
-  INDEX (squad),
-  INDEX (season, squad)
+  INDEX (player_id)
 );
 
 CREATE TABLE GoalkeeperStat (
   id               INTEGER NOT NULL  AUTO_INCREMENT,
   player_id        INTEGER,
-  season           VARCHAR(10),
-  squad            VARCHAR(64),
-  season_fbref     VARCHAR(64),
+  season_id        INTEGER,
 
   # Descriptive Information
   comp             VARCHAR(64),
@@ -109,9 +108,7 @@ CREATE TABLE GoalkeeperStat (
 
   PRIMARY KEY (id),
   FOREIGN KEY GoalkeeperStat (player_id) REFERENCES Player (player_id),
-  FOREIGN KEY GoalkeeperStat (season, squad, season_fbref) REFERENCES ClubSeason (season, squad, fbref_id),
+  FOREIGN KEY GoalkeeperStat (season_id) REFERENCES ClubSeason (season_id),
 
-  INDEX (player_id),
-  INDEX (squad),
-  INDEX (season, squad)
+  INDEX (player_id)
 );
