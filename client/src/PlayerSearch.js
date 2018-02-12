@@ -49,7 +49,6 @@ class PlayerSearch extends React.Component {
 
         const playerRows = players.map((player, idx) => (
             <tr key={idx}>
-                <td>{player.description}</td>
                 <td className="right aligned">{player.name}</td>
                 <td className="right aligned">{player.date_of_birth}</td>
                 <td className="right aligned">{player.position}</td>

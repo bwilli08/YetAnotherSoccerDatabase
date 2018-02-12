@@ -33,15 +33,18 @@ class App extends Component {
         return (
             <div>
                 <Navbar color="inverse" light expand="md">
-                    <NavbarBrand href="/">reactstrap</NavbarBrand>
+                    <NavbarBrand href="/">YetAnotherSoccerDatabase</NavbarBrand>
                     <NavbarToggler onClick={this.toggle} />
                     <Collapse isOpen={this.state.isOpen} navbar>
                         <Nav className="ml-auto" navbar>
                             <NavItem>
-                                <NavLink href="/components/">Components</NavLink>
+                                <NavLink href="/players">Players</NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink href="https://github.com/reactstrap/reactstrap">Github</NavLink>
+                                <NavLink href="/clubs">Clubs</NavLink>
+                            </NavItem>
+                            <NavItem>
+                                <NavLink href="/about">About</NavLink>
                             </NavItem>
                         </Nav>
                     </Collapse>

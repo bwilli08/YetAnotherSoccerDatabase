@@ -44,6 +44,7 @@ app.get("/search/teams", (req, res) => {
 
 app.get("/search/players", (req, res) => {
     const name = req.query.name;
+    const position = req.query.position;
 
     if (!name) {
         res.json({
@@ -58,7 +59,6 @@ app.get("/search/players", (req, res) => {
 
     db.query(qry, function (err, result) {
         if (err) throw err;
-        console.log(result);
 
         res.json(result);
     });
