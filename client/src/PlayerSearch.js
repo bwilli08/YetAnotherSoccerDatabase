@@ -44,8 +44,8 @@ class PlayerSearch extends React.Component {
     };
 
     render() {
-        const { showRemoveIcon, players } = this.state;
-        const removeIconStyle = showRemoveIcon ? {} : { visibility: "hidden" };
+        const {showRemoveIcon, players} = this.state;
+        const removeIconStyle = showRemoveIcon ? {} : {visibility: "hidden"};
 
         const playerRows = players.map((player, idx) => (
             <tr key={idx}>
@@ -71,7 +71,7 @@ class PlayerSearch extends React.Component {
                                         value={this.state.searchValue}
                                         onChange={this.handleSearchChange}
                                     />
-                                    <i className="search icon" />
+                                    <i className="search icon"/>
                                 </div>
                                 <i
                                     className="remove icon"

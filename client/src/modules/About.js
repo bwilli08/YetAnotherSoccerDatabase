@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, {Component} from "react";
 import {
     Collapse,
     Navbar,
@@ -6,16 +6,15 @@ import {
     NavbarBrand,
     Nav,
     NavItem,
-    NavLink,
     Container,
     Row,
     Col,
-    Jumbotron,
-    Button
-} from 'reactstrap';
-import PlayerSearch from "./PlayerSearch";
+    Jumbotron
+} from "reactstrap";
+import {Link} from "react-router-dom";
+import PlayerSearch from "../PlayerSearch";
 
-class App extends Component {
+class About extends Component {
     constructor(props) {
         super(props);
 
@@ -24,27 +23,32 @@ class App extends Component {
             isOpen: false
         };
     }
+
     toggle() {
         this.setState({
             isOpen: !this.state.isOpen
         });
     }
+
     render() {
         return (
             <div>
                 <Navbar color="inverse" light expand="md">
                     <NavbarBrand href="/">YetAnotherSoccerDatabase</NavbarBrand>
-                    <NavbarToggler onClick={this.toggle} />
+                    <NavbarToggler onClick={this.toggle}/>
                     <Collapse isOpen={this.state.isOpen} navbar>
                         <Nav className="ml-auto" navbar>
                             <NavItem>
-                                <NavLink href="/players">Players</NavLink>
+                                <Link to="/">Home</Link>
                             </NavItem>
                             <NavItem>
-                                <NavLink href="/clubs">Clubs</NavLink>
+                                <Link to="/about">About</Link>
                             </NavItem>
                             <NavItem>
-                                <NavLink href="/about">About</NavLink>
+                                <Link to="/clubs">Clubs</Link>
+                            </NavItem>
+                            <NavItem>
+                                <Link to="/players">Players</Link>
                             </NavItem>
                         </Nav>
                     </Collapse>
@@ -53,18 +57,7 @@ class App extends Component {
                     <Container>
                         <Row>
                             <Col>
-                                <h1>Welcome to React</h1>
-                                <p>
-                                    <Button
-                                        tag="a"
-                                        color="success"
-                                        size="large"
-                                        href="http://reactstrap.github.io"
-                                        target="_blank"
-                                    >
-                                        View Reactstrap Docs
-                                    </Button>
-                                </p>
+                                <h1>Welcome to Yet Another Soccer Database!</h1>
                             </Col>
                         </Row>
                     </Container>
@@ -77,4 +70,4 @@ class App extends Component {
     }
 }
 
-export default App;
+export default About;
