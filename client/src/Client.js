@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
 function player_search(query, cb) {
-    return fetch(`search/players?name=${query}`, {
+    return fetch(`/search/players?name=${query}`, {
         accept: "application/json"
     })
         .then(checkStatus)

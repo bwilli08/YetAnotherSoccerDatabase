@@ -7,9 +7,11 @@ const db = mysql.createConnection({
     host: db_info.db_host(),
     user: db_info.db_user(),
     password: db_info.db_passwd(),
-    database: db_info.db_name()
+    database: db_info.db_name(),
+    dateStrings: true
 });
 
+const outfield_positions = ["FW", "MF", "DF"];
 const app = express();
 
 app.set("port", process.env.PORT || 3001);
@@ -19,32 +21,8 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static("client/build"));
 }
 
-app.get("/search/teams", (req, res) => {
-    const name = req.query.name;
-
-    if (!name) {
-        res.json({
-            error: "Missing required parameter `name`"
-        });
-        return;
-    }
-
-    qry = `SELECT * FROM Club WHERE squad LIKE '${name}%'`;
-
-    console.log(qry);
-
-    db.query(qry, function (err, result) {
-        if (err) throw err;
-        console.log(result);
-
-        res.json(result);
-    });
-});
-
-
 app.get("/search/players", (req, res) => {
     const name = req.query.name;
-    const position = req.query.position;
 
     if (!name) {
         res.json({
@@ -55,8 +33,6 @@ app.get("/search/players", (req, res) => {
 
     qry = `SELECT * FROM Player WHERE name LIKE '%${name}%' ORDER BY name ASC`;
 
-    console.log(qry);
-
     db.query(qry, function (err, result) {
         if (err) throw err;
 
@@ -64,25 +40,79 @@ app.get("/search/players", (req, res) => {
     });
 });
 
-app.get("/club-stats", (req, res) => {
-    const club = req.query.club;
+function getPlayer(req, res) {
+    const player_id = req.query.id;
+    const attribute = req.query.attr;
 
-    if (!club) {
+    if (!player_id) {
         res.json({
-            error: "Missing required parameter `club`"
+            error: "Missing required parameter `id`"
         });
         return;
     }
 
-    qry = `SELECT * FROM ClubSeason WHERE squad LIKE '${club}%'`;
+    const position_qry = `SELECT * FROM Player WHERE player_id=${player_id}`;
 
-    console.log(qry);
-
-    db.query(qry, function (err, result) {
+    db.query(position_qry, function (err, result) {
         if (err) throw err;
-        console.log(result);
 
-        res.json(result);
+        if (attribute) {
+            res(result[0][attribute]);
+        } else {
+            res(result[0]);
+        }
+    });
+}
+
+function decideStatTable(position, cb) {
+    if (outfield_positions.indexOf(position) >= 0) {
+        cb("OutfieldPlayerStat");
+    } else if (position == "GK") {
+        cb("GoalkeeperStat");
+    } else {
+        console.log(`Unknown player position`);
+        return;
+    }
+}
+
+app.get("/player", (req, res) => {
+    getPlayer(req, (result) => res.json(result));
+});
+
+app.get("/player-clubs", (req, res) => {
+    const player_id = req.query.id;
+
+    if (!player_id) {
+        res.json({
+            error: "Missing required parameter `id`"
+        });
+        return;
+    }
+
+    req.query.attr = "position";
+    getPlayer(req, (result) => {
+        const position = result;
+
+        decideStatTable(position, (table) => {
+            const qry = `SELECT club_name
+            FROM   (SELECT season_id
+                    FROM ${table}
+                    WHERE player_id=${player_id}) s
+                LEFT JOIN
+                    (SELECT club_name, season_id
+                     FROM   Club
+                     LEFT JOIN
+                            ClubSeason
+                     USING (club_id)) c
+                USING (season_id)
+            GROUP BY club_name
+            ORDER BY COUNT(*) DESC`;
+
+            db.query(qry, function (err, result) {
+                if (err) throw err;
+                res.json(result);
+            });
+        });
     });
 });
 
@@ -96,33 +126,17 @@ app.get("/player-stats", (req, res) => {
         return;
     }
 
-    qry = `SELECT position FROM Player WHERE player_id='${id}'`;
+    req.query.attr = "position";
+    getPlayer(req, (result) => {
+        const position = result;
 
-    db.query(qry, function (err, result) {
-        if (err) throw err;
-
-        console.log("Length: " + result.length);
-
-        const position = ((result.length > 0) ? result[0]['position'] : "Invalid");
-
-        console.log("Position: " + position);
-
-        if (position == "Invalid") {
-            res.json({
-                error: `Unknown player id: ${id}`
-            });
-            return;
-        }
-
-        const table = (position == "GK") ? "GoalkeeperStat" : "OutfieldPlayerStat";
-
-        db.query(`SELECT * FROM ${table} WHERE player_id=${id}`,
-            function (err, result) {
-                if (err) throw err;
-                console.log("Result: " + result);
-
-                res.json(result);
-            });
+        decideStatTable(position, (table) => {
+            db.query(`SELECT * FROM ${table} WHERE player_id=${id}`,
+                function (err, result) {
+                    if (err) throw err;
+                    res.json(result);
+                });
+        });
     });
 });
 

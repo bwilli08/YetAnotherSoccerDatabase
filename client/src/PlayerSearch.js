@@ -1,33 +1,52 @@
 import React from "react";
+import {
+    Button,
+    InputGroup,
+    InputGroupButtonDropdown,
+    Input,
+    DropdownToggle,
+    DropdownMenu,
+    DropdownItem
+} from "reactstrap";
+import {withRouter} from "react-router-dom";
 import Client from "./Client";
 
 const MATCHING_PLAYER_LIMIT = 25;
 
 class PlayerSearch extends React.Component {
-    state = {
-        players: [],
-        showRemoveIcon: false,
-        searchValue: ""
+    constructor(props) {
+        super(props);
+
+        this.toggle = this.toggle.bind(this);
+        this.state = {
+            name: "",
+            dropdownText: "Search for...",
+            searchFor: "",
+            dropdownOpen: false,
+            players: []
+        };
+    }
+
+    toggle() {
+        this.setState({
+            dropdownOpen: !this.state.dropdownOpen
+        });
+    }
+
+    handleTextChange = (event) => {
+        this.setState({
+            name: event.target.value,
+            isTyping: false
+        });
     };
 
-    handleSearchChange = e => {
-        const value = e.target.value;
-
-        this.setState({
-            searchValue: value
-        });
-
-        if (value === "" || value.length < 3) {
+    populatePlayers = name => {
+        if (name === "" || name.length < 3) {
             this.setState({
-                players: [],
-                showRemoveIcon: false
+                players: []
             });
         } else {
-            this.setState({
-                showRemoveIcon: true
-            });
-
-            Client.player_search(value, players => {
+            Client.player_search(name, players => {
                 this.setState({
                     players: players.slice(0, MATCHING_PLAYER_LIMIT)
                 });
@@ -35,66 +54,54 @@ class PlayerSearch extends React.Component {
         }
     };
 
-    handleSearchCancel = () => {
+    handleSearch = () => {
+        if (this.state.searchFor) {
+            this.props.history.push({
+                pathname: this.state.searchFor,
+                state: {
+                    name: this.state.name
+                }
+            })
+        }
+    };
+
+    _handleKeyPress = (event) => {
+        if (event.key === 'Enter') {
+            this.handleSearch();
+        }
+    };
+
+    setClub = () => {
         this.setState({
-            players: [],
-            showRemoveIcon: false,
-            searchValue: ""
+            dropdownText: "Club Search",
+            searchFor: "/clubs"
+        });
+    };
+
+    setPlayer = () => {
+        this.setState({
+            dropdownText: "Player Search",
+            searchFor: "/players"
         });
     };
 
     render() {
-        const {showRemoveIcon, players} = this.state;
-        const removeIconStyle = showRemoveIcon ? {} : {visibility: "hidden"};
-
-        const playerRows = players.map((player, idx) => (
-            <tr key={idx}>
-                <td className="right aligned">{player.name}</td>
-                <td className="right aligned">{player.date_of_birth}</td>
-                <td className="right aligned">{player.position}</td>
-                <td className="right aligned">{player.height}</td>
-            </tr>
-        ));
-
         return (
-            <div id="player-search">
-                <table className="ui selectable structured large table">
-                    <thead>
-                    <tr>
-                        <th colSpan="5">
-                            <div className="ui fluid search">
-                                <div className="ui icon input">
-                                    <input
-                                        className="prompt"
-                                        type="text"
-                                        placeholder="Search players..."
-                                        value={this.state.searchValue}
-                                        onChange={this.handleSearchChange}
-                                    />
-                                    <i className="search icon"/>
-                                </div>
-                                <i
-                                    className="remove icon"
-                                    onClick={this.handleSearchCancel}
-                                    style={removeIconStyle}
-                                />
-                            </div>
-                        </th>
-                    </tr>
-                    <tr>
-                        <th>Name</th>
-                        <th>Date of Birth</th>
-                        <th>Position</th>
-                        <th>Height (cm)</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {playerRows}
-                    </tbody>
-                </table>
-            </div>
+            <InputGroup>
+                <InputGroupButtonDropdown addonType="append" isOpen={this.state.dropdownOpen} toggle={this.toggle}>
+                    <DropdownToggle caret>
+                        {this.state.dropdownText}
+                    </DropdownToggle>
+                    <DropdownMenu>
+                        <DropdownItem onClick={this.setClub}>Club Search</DropdownItem>
+                        <DropdownItem onClick={this.setPlayer}>Player Search</DropdownItem>
+                    </DropdownMenu>
+                </InputGroupButtonDropdown>
+                <Input placeholder="Enter text..." onKeyPress={this._handleKeyPress} onChange={this.handleTextChange}/>
+                <Button onClick={this.handleSearch}>Search</Button>
+            </InputGroup>
         );
     }
 }
 
-export default PlayerSearch;
+export default withRouter(PlayerSearch);
