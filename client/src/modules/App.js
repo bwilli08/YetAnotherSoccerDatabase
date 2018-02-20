@@ -1,7 +1,6 @@
 import React from "react";
 import {Navbar, NavbarBrand, Nav, NavLink, NavItem, Container, Jumbotron} from "reactstrap";
 import {Link, withRouter} from "react-router-dom";
-import PlayerSearch from "../PlayerSearch";
 
 class App extends React.Component {
 
@@ -10,7 +9,6 @@ class App extends React.Component {
             <div>
                 <Navbar color="inverse" light expand="md">
                     <NavbarBrand href="/">YetAnotherSoccerDatabase</NavbarBrand>
-                    <PlayerSearch/>
                     <Nav className="ml-auto" navbar>
                         <NavItem>
                             <NavLink tag={Link} to="/">Home</NavLink>
