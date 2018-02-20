@@ -9,9 +9,6 @@ import {
     DropdownItem
 } from "reactstrap";
 import {withRouter} from "react-router-dom";
-import Client from "./Client";
-
-const MATCHING_PLAYER_LIMIT = 25;
 
 class PlayerSearch extends React.Component {
     constructor(props) {
@@ -40,28 +37,15 @@ class PlayerSearch extends React.Component {
         });
     };
 
-    populatePlayers = name => {
-        if (name === "" || name.length < 3) {
-            this.setState({
-                players: []
-            });
-        } else {
-            Client.player_search(name, players => {
-                this.setState({
-                    players: players.slice(0, MATCHING_PLAYER_LIMIT)
-                });
-            });
-        }
-    };
-
     handleSearch = () => {
-        if (this.state.searchFor) {
+        if (this.state.searchFor && this.state.name.length > 3) {
             this.props.history.push({
                 pathname: this.state.searchFor,
+                search: `?name=${this.state.name}`,
                 state: {
                     name: this.state.name
                 }
-            })
+            });
         }
     };
 
