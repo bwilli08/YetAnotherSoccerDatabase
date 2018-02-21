@@ -8,6 +8,15 @@ function club_search(query, cb) {
         .then(cb);
 }
 
+function club_stats(query, cb) {
+    return fetch(`/club-stats?club_id=${query}`, {
+        accept: "application/json"
+    })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
 function player_search(query, position, cb) {
     var qry = `/search/players?name=${query}`;
 
@@ -56,5 +65,5 @@ function parseJSON(response) {
     return response.json();
 }
 
-const Client = {club_search, player_search, player_clubs, stat_search};
+const Client = {club_search, club_stats, player_search, player_clubs, stat_search};
 export default Client;

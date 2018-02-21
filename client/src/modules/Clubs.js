@@ -1,13 +1,5 @@
 import React, {Component} from "react";
-import {
-    Button,
-    InputGroup,
-    Input,
-    Table,
-    Container,
-    Row,
-    Col
-} from "reactstrap";
+import {Button, InputGroup, Input, Table, Container, Row, Col} from "reactstrap";
 import Client from "../Client";
 import ToggleDisplay from "react-toggle-display";
 
@@ -25,7 +17,11 @@ class Clubs extends Component {
             displaySearchMessage: false,
             displayClubs: false,
             clubs: [],
-            isClubSearching: false
+            isClubSearching: false,
+
+            displayStats: false,
+            isStatsSearching: false,
+            stats: []
         };
     }
 
@@ -38,7 +34,7 @@ class Clubs extends Component {
     handleSearch = () => {
         const club_name = this.state.searchText;
 
-        if (club_name === this.state.activeSearchText) {
+        if (!this.state.displayStats && club_name === this.state.activeSearchText) {
             return;
         }
 
@@ -47,7 +43,8 @@ class Clubs extends Component {
                 displaySearchMessage: false,
                 displayClubs: true,
                 clubs: [],
-                isClubSearching: true
+                isClubSearching: true,
+                displayStats: false
             });
 
             Client.club_search(club_name, clubs => {
@@ -70,8 +67,23 @@ class Clubs extends Component {
         }
     };
 
+    getClubStats = (club) => {
+        this.setState({
+            displayStats: true,
+            isStatsSearching: true,
+            clubs: [club]
+        });
+
+        Client.club_stats(club.club_id, stats => {
+            this.setState({
+                stats: stats,
+                isStatsSearching: false
+            });
+        });
+    };
+
     render() {
-        const {clubs} = this.state;
+        const {stats, clubs} = this.state;
 
         const clubRows = clubs.map((club, idx) => (
             <tr key={idx}>
@@ -80,6 +92,19 @@ class Clubs extends Component {
                 <td>
                     <Button onClick={() => this.getClubStats(club)}>View</Button>
                 </td>
+            </tr>
+        ));
+
+        const statRows = stats.map((stat, idx) => (
+            <tr>
+                <td>{stat.season}</td>
+                <td>{stat.comp}</td>
+                <td>{stat.goals}</td>
+                <td>{stat.assists}</td>
+                <td>{stat.fouls}</td>
+                <td>{stat.yc}</td>
+                <td>{stat.rc}</td>
+                <td>{stat.shots}</td>
             </tr>
         ));
 
@@ -115,6 +140,26 @@ class Clubs extends Component {
                                 </thead>
                                 <tbody>
                                 {clubRows}
+                                </tbody>
+                            </Table>
+                        </ToggleDisplay>
+                        <ToggleDisplay show={this.state.displayStats}>
+                            <h4>Season Statistics</h4>
+                            <Table>
+                                <thead>
+                                <tr>
+                                    <th>Season</th>
+                                    <th>Competition</th>
+                                    <th>Goals</th>
+                                    <th>Assists</th>
+                                    <th>Fouls</th>
+                                    <th>YC</th>
+                                    <th>RC</th>
+                                    <th>Shots</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {statRows}
                                 </tbody>
                             </Table>
                         </ToggleDisplay>

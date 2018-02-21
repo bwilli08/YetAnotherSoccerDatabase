@@ -38,7 +38,6 @@ class Players extends Component {
             isPlayerSearching: false,
             position: DEFAULT_POSITION,
 
-            player_id: "",
             displayStats: false,
             stats: [],
             isGoalkeeper: false,
@@ -56,7 +55,7 @@ class Players extends Component {
         const player_name = this.state.searchText;
         const position = this.state.position;
 
-        if (player_name === this.state.activeSearchText && position === this.state.activeSearchPosition) {
+        if (!this.state.displayStats && player_name === this.state.activeSearchText && position === this.state.activeSearchPosition) {
             return;
         }
 

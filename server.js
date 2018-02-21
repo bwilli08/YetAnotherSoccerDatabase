@@ -65,7 +65,7 @@ app.get("/search/clubs", (req, res) => {
         return;
     }
 
-    var qry =  `SELECT club_id, club_name, comp
+    var qry = `SELECT club_id, club_name, comp
                 FROM
                     (SELECT *
                     FROM Club
@@ -147,6 +147,41 @@ app.get("/player-clubs", (req, res) => {
             });
         });
     });
+});
+
+app.get("/club-stats", (req, res) => {
+    const club_id = req.query.club_id;
+
+    if (!club_id) {
+        res.json({
+            error: "Missing required parameter `club_id`"
+        });
+        return;
+    }
+
+    db.query(
+        `SELECT
+            season,
+            comp,
+            SUM(goals) as goals,
+            SUM(assists) as assists,
+            SUM(fouls) as fouls,
+            SUM(cards_yellow) as yc,
+            SUM(cards_red) as rc,
+            SUM(shots_on_target) as shots
+        FROM
+            (SELECT *
+            FROM ClubSeason
+            WHERE club_id='${club_id}') seasons
+        LEFT JOIN
+            OutfieldPlayerStat
+        USING (season_id)
+        GROUP BY season_id, season, comp
+        ORDER BY season ASC`,
+        function (err, result) {
+            if (err) throw err;
+            res.json(result);
+        });
 });
 
 app.get("/player-stats", (req, res) => {
