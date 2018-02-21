@@ -23,6 +23,7 @@ if (process.env.NODE_ENV === "production") {
 
 app.get("/search/players", (req, res) => {
     const name = req.query.name;
+    const position = req.query.position;
 
     if (!name) {
         res.json({
@@ -31,7 +32,13 @@ app.get("/search/players", (req, res) => {
         return;
     }
 
-    qry = `SELECT * FROM Player WHERE name LIKE '%${name}%' ORDER BY name ASC`;
+    var qry = `SELECT * FROM Player WHERE name LIKE '%${name}%'`;
+
+    if (position) {
+        qry = qry.concat(` AND position='${position}'`);
+    }
+
+    qry = qry.concat(" ORDER BY name ASC");
 
     db.query(qry, function (err, result) {
         if (err) throw err;
@@ -131,7 +138,19 @@ app.get("/player-stats", (req, res) => {
         const position = result;
 
         decideStatTable(position, (table) => {
-            db.query(`SELECT * FROM ${table} WHERE player_id=${id}`,
+            db.query(`
+            SELECT *
+            FROM
+                ${table}
+            LEFT JOIN
+                (SELECT *
+                FROM Club
+                LEFT JOIN
+                ClubSeason
+                USING (club_id)) club
+            USING (season_id)
+            WHERE player_id=${id}
+            ORDER BY club.season ASC`,
                 function (err, result) {
                     if (err) throw err;
                     res.json(result);
