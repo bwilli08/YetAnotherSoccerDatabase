@@ -1,6 +1,21 @@
 /* eslint-disable no-undef */
-function player_search(query, cb) {
-    return fetch(`/search/players?name=${query}`, {
+function player_search(query, position, cb) {
+    var qry = `/search/players?name=${query}`;
+
+    if (position) {
+        qry = qry.concat(`&position=${position}`);
+    }
+
+    return fetch(qry, {
+        accept: "application/json"
+    })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
+function player_clubs(query, cb) {
+    return fetch(`/player-clubs?id=${query}`, {
         accept: "application/json"
     })
         .then(checkStatus)
@@ -32,5 +47,5 @@ function parseJSON(response) {
     return response.json();
 }
 
-const Client = {player_search, stat_search};
+const Client = {player_search, stat_search, player_clubs};
 export default Client;
