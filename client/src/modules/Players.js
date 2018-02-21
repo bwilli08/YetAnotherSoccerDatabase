@@ -54,7 +54,7 @@ class Players extends Component {
 
     handleSearch = () => {
         const player_name = this.state.searchText;
-        const position = this.state.position === DEFAULT_POSITION ? "" : this.state.position;
+        const position = this.state.position;
 
         if (player_name === this.state.activeSearchText && position === this.state.activeSearchPosition) {
             return;
@@ -69,7 +69,7 @@ class Players extends Component {
                 displayStats: false
             });
 
-            Client.player_search(player_name, position, players => {
+            Client.player_search(player_name, position === DEFAULT_POSITION ? "" : position, players => {
                 this.setState({
                     activeSearchText: player_name,
                     activeSearchPosition: position,

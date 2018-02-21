@@ -21,32 +21,6 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static("client/build"));
 }
 
-app.get("/search/players", (req, res) => {
-    const name = req.query.name;
-    const position = req.query.position;
-
-    if (!name) {
-        res.json({
-            error: "Missing required parameter `name`"
-        });
-        return;
-    }
-
-    var qry = `SELECT * FROM Player WHERE name LIKE '%${name}%'`;
-
-    if (position) {
-        qry = qry.concat(` AND position='${position}'`);
-    }
-
-    qry = qry.concat(" ORDER BY name ASC");
-
-    db.query(qry, function (err, result) {
-        if (err) throw err;
-
-        res.json(result);
-    });
-});
-
 function getPlayer(req, res) {
     const player_id = req.query.id;
     const attribute = req.query.attr;
@@ -81,6 +55,58 @@ function decideStatTable(position, cb) {
         return;
     }
 }
+app.get("/search/clubs", (req, res) => {
+    const name = req.query.name;
+
+    if (!name) {
+        res.json({
+            error: "Missing required parameter `name`"
+        });
+        return;
+    }
+
+    var qry =  `SELECT club_id, club_name, comp
+                FROM
+                    (SELECT *
+                    FROM Club
+                    WHERE club_name LIKE '%${name}%') clubs
+                LEFT JOIN
+                    ClubSeason
+                USING (club_id)
+                GROUP BY club_id`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
+app.get("/search/players", (req, res) => {
+    const name = req.query.name;
+    const position = req.query.position;
+
+    if (!name) {
+        res.json({
+            error: "Missing required parameter `name`"
+        });
+        return;
+    }
+
+    var qry = `SELECT * FROM Player WHERE name LIKE '%${name}%'`;
+
+    if (position) {
+        qry = qry.concat(` AND position='${position}'`);
+    }
+
+    qry = qry.concat(" ORDER BY name ASC");
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
 
 app.get("/player", (req, res) => {
     getPlayer(req, (result) => res.json(result));

@@ -1,4 +1,13 @@
 /* eslint-disable no-undef */
+function club_search(query, cb) {
+    return fetch(`/search/clubs?name=${query}`, {
+        accept: "application/json"
+    })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
 function player_search(query, position, cb) {
     var qry = `/search/players?name=${query}`;
 
@@ -47,5 +56,5 @@ function parseJSON(response) {
     return response.json();
 }
 
-const Client = {player_search, stat_search, player_clubs};
+const Client = {club_search, player_search, player_clubs, stat_search};
 export default Client;
