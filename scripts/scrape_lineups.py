@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
+import string
 import mysql.connector
 import pandas
 import sys
@@ -91,6 +92,8 @@ def add_competition(comp_name, country, year, fl_ref):
     print('Added {} for {} [{}] ({})'.format(comp_name, year, country, fl_ref))
 
 def backfill_competitions():
+    global competition_table
+
     try:
         driver = webdriver.Chrome("./chromedriver.exe", chrome_options=chrome_options)
         driver.get(base_url + tournaments_page_suffix)
@@ -103,14 +106,20 @@ def backfill_competitions():
         for comp in all_comps:
             comp_url = base_url + comp['href'][:-1]
 
+            if comp_url == "https://www.football-lineups.com/supercup":
+                print("Skipping supercups")
+                continue
+
             if comp_url not in dict(competition_table):
                 driver.get(comp_url)
                 comp_html = driver.page_source
                 comp_page = BeautifulSoup(comp_html, 'html5lib')
-
                 comp_main = comp_page.find('div', id='maintitle').find('td', attrs={"class": "TDmain"}).find('td')
-
-                comp_name = comp_main.find('font').find('a').get_text()
+                comp_name = comp_main.find('font')
+                if comp_name.find('a'):
+                    comp_name = comp_name.find('a').get_text()
+                else:
+                    comp_name = comp_name.get_text()
                 comp_country = comp_main.find('a').find('img')['title']
 
                 comp_season_select = comp_main.find('select')
@@ -119,18 +128,19 @@ def backfill_competitions():
                     comp_seasons = comp_season_select.find_all('option')
 
                     for season in comp_seasons:
-                        year = season.get_text()
-                    fl_href = 'https://www.football-lineups.com/tourn/' + season['value']
+                        year = ''.join(ch for ch in season.get_text() if not ch.isalpha()).strip()
+                        fl_href = 'https://www.football-lineups.com/tourn/' + season['value']
 
-                    if fl_href not in dict(competition_table):
-                        add_competition(comp_name, comp_country, year, fl_href)
-                else:
+                        if fl_href not in dict(competition_table):
+                            add_competition(comp_name, comp_country, year, fl_href)
+                elif comp_url not in dict(competition_table):
                     add_competition(comp_name, comp_country, comp_url.split('_')[-1], comp_url)
 
                 add_to_database(competition_dictionary)
             else:
-                print(comp_url + " already in database")
+                print(comp_url + " already in database.")
     finally:
         driver.quit()
 
-backfill_competitions()
+
+#backfill_competitions()
