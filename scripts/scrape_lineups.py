@@ -31,10 +31,10 @@ def convert_sql_result_to_set(statement, fun):
 
 # TODO: Change these to x[0] -> {"attr1": x[1], "attr2": x[2], etc.}
 # Track global state of Database tables
-competition_table = convert_sql_result_to_set("SELECT fl_ref, comp_id FROM Competition", (lambda x: (x[0], x[1])))
+competition_table = convert_sql_result_to_set("SELECT fl_ref, comp_id, finished_backfill FROM Competition", (lambda x: (x[0], (x[1], x[2]))))
 club_table = convert_sql_result_to_set("SELECT fl_ref, club_id FROM Club", (lambda x: (x[0], x[1])))
-club_season_table = convert_sql_result_to_set("SELECT fl_ref, club_id, comp_id FROM ClubSeason",
-                                              (lambda x: (x[0], (x[1], x[2]))))
+club_season_table = convert_sql_result_to_set("SELECT fl_ref, club_id, comp_id, players_backfilled FROM ClubSeason",
+                                              (lambda x: (x[0], (x[1], x[2], x[3]))))
 game_table = convert_sql_result_to_set("SELECT fl_ref, game_id FROM Game", (lambda x: (x[0], x[1])))
 
 # Global Headless Driver
@@ -103,9 +103,9 @@ def add_to_competition_table():
             refs.append("'{}'".format(fl_ref))
         qry_str = ", ".join(refs)
 
-        qry = 'SELECT fl_ref, comp_id FROM Competition WHERE fl_ref in ({})'.format(qry_str)
+        qry = 'SELECT fl_ref, comp_id, finished_backfill FROM Competition WHERE fl_ref in ({})'.format(qry_str)
 
-        competition_table = competition_table.union(convert_sql_result_to_set(qry, (lambda x: (x[0], x[1]))))
+        competition_table = competition_table.union(convert_sql_result_to_set(qry, (lambda x: (x[0], (x[1], x[2])))))
 
 
 def clear_competition_dictionary():
@@ -120,7 +120,8 @@ competition_dictionary = {
         'comp_name': [],
         'country': [],
         'year': [],
-        'fl_ref': []
+        'fl_ref': [],
+        'finished_backfill': []
     },
     'variable_table': competition_table
 }
@@ -138,9 +139,9 @@ def add_to_club_season_table():
             refs.append("'{}'".format(fl_ref))
         qry_str = ", ".join(refs)
 
-        qry = 'SELECT fl_ref, club_id, comp_id FROM ClubSeason WHERE fl_ref in ({})'.format(qry_str)
+        qry = 'SELECT fl_ref, club_id, comp_id, players_backfilled FROM ClubSeason WHERE fl_ref in ({})'.format(qry_str)
 
-        club_season_table = club_season_table.union(convert_sql_result_to_set(qry, (lambda x: (x[0], (x[1], x[2])))))
+        club_season_table = club_season_table.union(convert_sql_result_to_set(qry, (lambda x: (x[0], (x[1], x[2], x[3])))))
 
 
 def clear_club_season_dictionary():
@@ -162,7 +163,8 @@ club_season_dictionary = {
         'draws': [],
         'losses': [],
         'goals_scored': [],
-        'goals_against': []
+        'goals_against': [],
+        'players_backfilled': []
     },
     'variable_table': club_season_table
 }
@@ -248,6 +250,7 @@ def add_competition(comp_name, country, year, fl_ref):
     table['country'].append(country)
     table['year'].append(year)
     table['fl_ref'].append(fl_ref)
+    table['finished_backfill'].append(False)
 
     print('Added competition {} for {} [{}] ({})'.format(comp_name, year, country, fl_ref))
 
@@ -265,6 +268,7 @@ def add_club_season(club_id, comp_id, fl_ref):
     table['losses'].append(-1)
     table['goals_scored'].append(-1)
     table['goals_against'].append(-1)
+    table['players_backfilled'].append(False)
 
     print('Added club season for ({}, {}) ({})'.format(club_id, comp_id, fl_ref))
 
@@ -312,11 +316,10 @@ def get_club_from_season(season_href):
 
 
 # Backfill methods
-def backfill_competitions():
+def backfill_competitions(driver):
     global competition_table
 
     try:
-        driver = webdriver.Chrome("./chromedriver.exe", chrome_options=chrome_options)
         driver.get(base_url + tournaments_page_suffix)
         html = driver.page_source
         code = BeautifulSoup(html, 'html5lib')
@@ -360,9 +363,8 @@ def backfill_competitions():
                 add_to_database(competition_dictionary)
             else:
                 print(comp_url + " already in database.")
-    finally:
-        driver.quit()
-
+    except (TimeoutException, SessionNotCreatedException):
+        print("error backfilling competitions")
 
 def backfill_club(driver, club_href):
     global club_table, club_dictionary
@@ -393,7 +395,7 @@ def backfill_club(driver, club_href):
     return dict(club_table).get(club_href)
 
 
-def backfill_club_season(driver, club_season_href, comp_id, do_add):
+def backfill_club_season(driver, club_season_href, comp_id):
     global club_season_table, club_season_dictionary
 
     club_href = get_club_href_from_season(club_season_href)
@@ -405,71 +407,86 @@ def backfill_club_season(driver, club_season_href, comp_id, do_add):
         # Backfill the season with 0's for stats
         add_club_season(club_id, comp_id, club_season_href)
 
-    if do_add:
-        add_to_database(club_season_dictionary)
+    # Assume that the DataFrame.to_sql method is called externally
+
+    try:
+        driver.get(club_season_href + "/Players")
+        html = driver.page_source
+        code = BeautifulSoup(html, 'html5lib')
 
 
-def backfill_seasons():
+    except (TimeoutException, SessionNotCreatedException):
+        print("Error loading Players page for " + club_season_href)
+
+
+def backfill_seasons(driver):
     global competition_table, club_season_dictionary, game_dictionary
 
-    for (fl_ref, id) in competition_table:
-        print(str(fl_ref) + " " + str(id))
-
+    for (fl_ref, (id, is_finished)) in competition_table:
         try:
-            driver = webdriver.Chrome("./chromedriver.exe", chrome_options=chrome_options)
-            driver.set_page_load_timeout(10)
+            print("{} {} [{}]".format(str(fl_ref), str(id), str(is_finished)))
 
-            # Make sure the clubs are backfilled
-            # Use just the fixtures. We can infer the table after.
-            driver.get(fl_ref + "/Fixture")
-            html = driver.page_source
-            code = BeautifulSoup(html, 'html5lib')
+            if not is_finished:
+                # Make sure the clubs are backfilled
+                # Use just the fixtures. We can infer the table after.
+                driver.get(fl_ref + "/Fixture")
+                html = driver.page_source
+                code = BeautifulSoup(html, 'html5lib')
 
-            fixture_table = code.find('div', id="maincontent") \
-                .find('td', attrs={"class": "TDmain"}) \
-                .find('table', attrs={"width": "690", "bgcolor": "#ffffff"})
+                fixture_table = code.find('div', id="maincontent") \
+                    .find('td', attrs={"class": "TDmain"}) \
+                    .find('table', attrs={"width": "690", "bgcolor": "#ffffff"})
 
-            if fixture_table:
-                fixtures = fixture_table.find_all('tr', id=lambda x: x and x.startswith('trfil'))
-                for fixture in fixtures:
-                    columns = fixture.find_all('td')
+                if fixture_table:
+                    fixtures = fixture_table.find_all('tr', id=lambda x: x and x.startswith('trfil'))
+                    for fixture in fixtures:
+                        columns = fixture.find_all('td')
 
-                    stage_col = columns[1].find('font')
-                    stage = None
-                    if stage_col:
-                        stage = stage_col.get_text()
-                    else:
-                        stage = "League"
+                        stage_col = columns[1].find('font')
+                        stage = None
+                        if stage_col:
+                            stage = stage_col.get_text()
+                        else:
+                            stage = "League"
 
-                    home_col = columns[2].find('a')
-                    home_season_href = base_url + home_col['href']
+                        home_col = columns[2].find('a')
+                        home_season_href = base_url + home_col['href']
 
-                    game_col = columns[3].find('a')
-                    game_href = base_url + game_col['href']
+                        game_col = columns[3].find('a')
+                        game_href = base_url + game_col['href']
 
-                    if game_href not in dict(game_table):
-                        away_col = columns[4].find('a')
-                        away_season_href = base_url + away_col['href']
+                        if game_href not in dict(game_table):
+                            away_col = columns[4].find('a')
+                            away_season_href = base_url + away_col['href']
 
-                        backfill_club_season(driver, home_season_href, id, False)
-                        backfill_club_season(driver, away_season_href, id, False)
+                            backfill_club_season(driver, home_season_href, id)
+                            backfill_club_season(driver, away_season_href, id)
 
-                        home_id = get_club_from_season(home_season_href)
-                        away_id = get_club_from_season(away_season_href)
+                            home_id = get_club_from_season(home_season_href)
+                            away_id = get_club_from_season(away_season_href)
 
-                        add_temporary_game_to_database(id, stage, game_href, home_id, away_id)
+                            add_temporary_game_to_database(id, stage, game_href, home_id, away_id)
 
-                if len(club_season_dictionary['table_structure']['fl_ref']):
-                    add_to_database(club_season_dictionary)
-                if len(game_dictionary['table_structure']['fl_ref']):
-                    add_to_database(game_dictionary)
+                    if len(club_season_dictionary['table_structure']['fl_ref']):
+                        add_to_database(club_season_dictionary)
+                    if len(game_dictionary['table_structure']['fl_ref']):
+                        add_to_database(game_dictionary)
 
-
+                engine.execute("UPDATE Competition SET finished_backfill=True WHERE fl_ref='{}'".format(fl_ref))
         except (TimeoutException, SessionNotCreatedException):
             print("Error loading " + str(fl_ref))
-        finally:
-            driver.quit()
 
 
-# backfill_competitions()
-backfill_seasons()
+def backfill_everything():
+    try:
+        driver = webdriver.Chrome("./chromedriver.exe", chrome_options=chrome_options)
+        driver.set_page_load_timeout(10)
+
+        # backfill_competitions(driver)
+        backfill_seasons(driver)
+    except (TimeoutException, SessionNotCreatedException):
+        print("Error loading " + str(fl_ref))
+    finally:
+        driver.quit()
+
+backfill_everything()
