@@ -29,6 +29,7 @@ CREATE TABLE Competition (
   comp_name VARCHAR(64),
   country   VARCHAR(64),
   year      VARCHAR(64),
+  finished_backfill BOOLEAN,
 
   UNIQUE KEY (fl_ref)
 );
@@ -41,7 +42,7 @@ CREATE TABLE Player (
   dob         DATE,
   height      DECIMAL(3, 2),
   foot        VARCHAR(8),
-  position    VARCHAR(8),
+  position    VARCHAR(32),
 
   UNIQUE KEY (fl_ref)
 
@@ -61,6 +62,8 @@ CREATE TABLE ClubSeason (
   losses        INTEGER,
   goals_scored  INTEGER,
   goals_against INTEGER,
+
+  players_backfilled BOOLEAN,
 
   PRIMARY KEY (club_id, comp_id),
 

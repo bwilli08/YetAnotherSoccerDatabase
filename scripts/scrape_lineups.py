@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
+import calendar
 import pandas
 import sys
 from bs4 import BeautifulSoup
@@ -29,11 +30,11 @@ def convert_sql_result_to_set(statement, fun):
     return set(map(fun, engine.execute(statement).fetchall()))
 
 
-# TODO: Change these to x[0] -> {"attr1": x[1], "attr2": x[2], etc.}
 # Track global state of Database tables
 competition_table = convert_sql_result_to_set("SELECT fl_ref, comp_id, finished_backfill FROM Competition",
                                               (lambda x: (x[0], (x[1], x[2]))))
 club_table = convert_sql_result_to_set("SELECT fl_ref, club_id FROM Club", (lambda x: (x[0], x[1])))
+player_table = convert_sql_result_to_set("SELECT fl_ref, player_id FROM Player", (lambda x: (x[0], x[1])))
 club_season_table = convert_sql_result_to_set("SELECT fl_ref, club_id, comp_id, players_backfilled FROM ClubSeason",
                                               (lambda x: (x[0], (x[1], x[2], x[3]))))
 game_table = convert_sql_result_to_set("SELECT fl_ref, game_id FROM Game", (lambda x: (x[0], x[1])))
@@ -44,6 +45,9 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("log-level=3")
 chrome_options.add_argument(
     "load-extension=C:/Users/Brent Williams/AppData/Local/Google/Chrome/User Data/Default/Extensions/gighmmpiobklfepjocnamgkkbiglidom")
+
+# Month to Num dictionary - Used because football-lineups.com stores dates in DD-Mon-YY format
+month_dict = {v: k for k, v in enumerate(calendar.month_abbr)}
 
 # Global Football-Lineups Information
 base_url = "https://www.football-lineups.com"
@@ -97,11 +101,11 @@ club_dictionary = {
 def add_to_competition_table():
     global competition_table
 
-    existing_refs = competition_dictionary['table_structure']['fl_ref']
+    new_refs = competition_dictionary['table_structure']['fl_ref']
 
-    if existing_refs:
+    if new_refs:
         refs = []
-        for fl_ref in existing_refs:
+        for fl_ref in new_refs:
             refs.append("'{}'".format(fl_ref))
         qry_str = ", ".join(refs)
 
@@ -126,6 +130,44 @@ competition_dictionary = {
         'finished_backfill': []
     },
     'variable_table': competition_table
+}
+
+
+# Player
+def add_to_player_table():
+    global player_table
+
+    new_refs = player_dictionary['table_structure']['fl_ref']
+
+    if new_refs:
+        refs = []
+        for fl_ref in new_refs:
+            refs.append("'{}'".format(fl_ref))
+        qry_str = ", ".join(refs)
+
+        qry = 'SELECT fl_ref, player_id FROM Player WHERE fl_ref in ({})'.format(qry_str)
+
+        player_table = player_table.union(convert_sql_result_to_set(qry, (lambda x: (x[0], x[1]))))
+
+
+def clear_player_dictionary():
+    clear_dictionary(player_dictionary['table_structure'])
+
+
+player_dictionary = {
+    'table_name': "Player",
+    'add_to_variable_table_method': add_to_player_table,
+    'clear_method': clear_player_dictionary,
+    'table_structure': {
+        'name': [],
+        'nationality': [],
+        'dob': [],
+        'height': [],
+        'foot': [],
+        'position': [],
+        'fl_ref': []
+    },
+    'variable_table': player_table
 }
 
 
@@ -256,6 +298,21 @@ def add_competition(comp_name, country, year, fl_ref):
     table['finished_backfill'].append(False)
 
     print('Added competition {} for {} [{}] ({})'.format(comp_name, year, country, fl_ref))
+
+
+def add_player(name, nationality, dob, height, foot, position, fl_ref):
+    table = player_dictionary['table_structure']
+    table['name'].append(name)
+    table['nationality'].append(nationality)
+    table['dob'].append(dob)
+    table['height'].append(height)
+    table['foot'].append(foot)
+    table['position'].append(position)
+    table['fl_ref'].append(fl_ref)
+
+    print(
+    'Added player {} [{}], born {}. Position: {}, Height: {}, Foot: {} ({})'.format(name, nationality, dob, position,
+                                                                                    height, foot, fl_ref))
 
 
 def add_club_season(club_id, comp_id, fl_ref):
@@ -400,24 +457,41 @@ def backfill_club(driver, club_href):
 
 
 def backfill_player(driver, player_href):
-    driver.get(player_href)
-    html = driver.page_source
-    code = BeautifulSoup(html, 'html5lib')
+    if player_href not in dict(player_table):
+        driver.get(player_href)
+        html = driver.page_source
+        code = BeautifulSoup(html, 'html5lib')
 
-    player_main = code.find('div', id='maintitle').find('td', attrs={"class": "TDmain"}).find('td')
-    info_table = player_main.find('table').find('td', attrs={"width": "220"}).find('table')
+        player_main = code.find('div', id='maintitle').find('td', attrs={"class": "TDmain"}).find('td')
+        info_table = player_main.find('table').find('td', attrs={"width": "220"}).find('table')
 
-    print(info_table)
+        name = str(player_main.find(text=True, recursive=False))
+        nationality = str(player_main.find('h1').find('img')['title'])
+        dob = None
+        height = None
+        foot = None
+        position = None
 
-    name = player_main.find(text=True, recursive=False)
-    nationality = player_main.find('h1').find('img')['title']
-    dob = info_table.find('tr', lambda x: x and x.find('b', lambda y: y and y.startswith("")))
-    height = None
-    foot = None
-    position = None
+        for tr in info_table.find_all('tr'):
+            txt = tr.get_text()
+            if "Born" in txt:
+                dob_arr = txt.split(" ")[0].split(":")[1].strip().split("-")
+                year = ("19" + dob_arr[2]) if dob_arr[2] > "19" else ("20" + dob_arr[2])
+                month = month_dict.get(dob_arr[1])
+                day = dob_arr[0]
+                dob = "{}-{}-{}".format(year, month, day)
+            elif "Height" in txt:
+                height = txt.split(":")[1].strip()
+            elif "Fav.foot" in txt:
+                foot = txt.split(":")[1].strip()
+            elif "Position" in txt:
+                position = txt.split(":")[1].strip()
+
+        add_player(name, nationality, dob, height, foot, position, player_href)
+        add_to_database(player_dictionary)
 
 
-def backfill_club_season(driver, club_season_href, comp_id, backfill_players):
+def backfill_club_season(driver, club_season_href, comp_id):
     global club_season_table, club_season_dictionary
 
     club_href = get_club_href_from_season(club_season_href)
@@ -428,24 +502,31 @@ def backfill_club_season(driver, club_season_href, comp_id, backfill_players):
             and club_season_href not in club_season_dictionary['table_structure']['fl_ref']:
         # Backfill the season with 0's for stats
         add_club_season(club_id, comp_id, club_season_href)
+        # Assume that the DataFrame.to_sql method is called externally
 
-    # Assume that the DataFrame.to_sql method is called externally
 
-    if backfill_players:
-        try:
-            driver.get(club_season_href + "/Players")
-            html = driver.page_source
-            code = BeautifulSoup(html, 'html5lib')
+def begin_player_backfill(driver):
+    for (club_season_href, (_, _, players_backfilled)) in dict(club_season_table):
+        if not players_backfilled:
+            try:
+                player_list = []
+                driver.get(club_season_href + "/Players")
+                html = driver.page_source
+                code = BeautifulSoup(html, 'html5lib')
 
-            main_table = code.find('div', id="maincontent").find('td', attrs={"class": "TDmain"}).find_all('table')[1]
-            entries = main_table.find_all('tr')
-            for entry in entries:
-                actual_entry = entry.find('a', href=lambda x: x and x.startswith('/footballer/'))
-                if actual_entry:
-                    player_href = (base_url + actual_entry['href'])[:-1]
+                main_table = code.find('div', id="maincontent").find('td', attrs={"class": "TDmain"}).find_all('table')[
+                    1]
+                entries = main_table.find_all('tr')
+                for entry in entries:
+                    actual_entry = entry.find('a', href=lambda x: x and x.startswith('/footballer/'))
+                    if actual_entry:
+                        player_href = (base_url + actual_entry['href'])[:-1]
+                        player_list.append(player_href)
+
+                for player_href in player_list:
                     backfill_player(driver, player_href)
-        except (TimeoutException, SessionNotCreatedException):
-            print("Error loading Players page for " + club_season_href)
+            except (TimeoutException, SessionNotCreatedException):
+                print("Error loading Players page for " + club_season_href)
 
 
 def backfill_seasons(driver):
@@ -488,8 +569,8 @@ def backfill_seasons(driver):
                             away_col = columns[4].find('a')
                             away_season_href = base_url + away_col['href']
 
-                            backfill_club_season(driver, home_season_href, id, False)
-                            backfill_club_season(driver, away_season_href, id, False)
+                            backfill_club_season(driver, home_season_href, id)
+                            backfill_club_season(driver, away_season_href, id)
 
                             home_id = get_club_from_season(home_season_href)
                             away_id = get_club_from_season(away_season_href)
@@ -507,12 +588,14 @@ def backfill_seasons(driver):
 
 
 def backfill_everything():
+    driver = None
     try:
         driver = webdriver.Chrome("./chromedriver.exe", chrome_options=chrome_options)
         driver.set_page_load_timeout(10)
-        
-        # backfill_competitions(driver)
+
+        backfill_competitions(driver)
         backfill_seasons(driver)
+        begin_player_backfill(driver)
     except (TimeoutException, SessionNotCreatedException):
         print("Error loading " + str(fl_ref))
     finally:
