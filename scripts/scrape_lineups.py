@@ -5,9 +5,9 @@ import pandas
 import sys
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import SessionNotCreatedException
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.chrome.options import Options
 from sqlalchemy import create_engine
 
 sys.path.insert(0, '../internal')
@@ -31,7 +31,8 @@ def convert_sql_result_to_set(statement, fun):
 
 # TODO: Change these to x[0] -> {"attr1": x[1], "attr2": x[2], etc.}
 # Track global state of Database tables
-competition_table = convert_sql_result_to_set("SELECT fl_ref, comp_id, finished_backfill FROM Competition", (lambda x: (x[0], (x[1], x[2]))))
+competition_table = convert_sql_result_to_set("SELECT fl_ref, comp_id, finished_backfill FROM Competition",
+                                              (lambda x: (x[0], (x[1], x[2]))))
 club_table = convert_sql_result_to_set("SELECT fl_ref, club_id FROM Club", (lambda x: (x[0], x[1])))
 club_season_table = convert_sql_result_to_set("SELECT fl_ref, club_id, comp_id, players_backfilled FROM ClubSeason",
                                               (lambda x: (x[0], (x[1], x[2], x[3]))))
@@ -41,7 +42,8 @@ game_table = convert_sql_result_to_set("SELECT fl_ref, game_id FROM Game", (lamb
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("log-level=3")
-chrome_options.add_argument("load-extension=C:/Users/Brent Williams/AppData/Local/Google/Chrome/User Data/Default/Extensions/gighmmpiobklfepjocnamgkkbiglidom")
+chrome_options.add_argument(
+    "load-extension=C:/Users/Brent Williams/AppData/Local/Google/Chrome/User Data/Default/Extensions/gighmmpiobklfepjocnamgkkbiglidom")
 
 # Global Football-Lineups Information
 base_url = "https://www.football-lineups.com"
@@ -141,7 +143,8 @@ def add_to_club_season_table():
 
         qry = 'SELECT fl_ref, club_id, comp_id, players_backfilled FROM ClubSeason WHERE fl_ref in ({})'.format(qry_str)
 
-        club_season_table = club_season_table.union(convert_sql_result_to_set(qry, (lambda x: (x[0], (x[1], x[2], x[3])))))
+        club_season_table = club_season_table.union(
+            convert_sql_result_to_set(qry, (lambda x: (x[0], (x[1], x[2], x[3])))))
 
 
 def clear_club_season_dictionary():
@@ -366,6 +369,7 @@ def backfill_competitions(driver):
     except (TimeoutException, SessionNotCreatedException):
         print("error backfilling competitions")
 
+
 def backfill_club(driver, club_href):
     global club_table, club_dictionary
 
@@ -395,7 +399,25 @@ def backfill_club(driver, club_href):
     return dict(club_table).get(club_href)
 
 
-def backfill_club_season(driver, club_season_href, comp_id):
+def backfill_player(driver, player_href):
+    driver.get(player_href)
+    html = driver.page_source
+    code = BeautifulSoup(html, 'html5lib')
+
+    player_main = code.find('div', id='maintitle').find('td', attrs={"class": "TDmain"}).find('td')
+    info_table = player_main.find('table').find('td', attrs={"width": "220"}).find('table')
+
+    print(info_table)
+
+    name = player_main.find(text=True, recursive=False)
+    nationality = player_main.find('h1').find('img')['title']
+    dob = info_table.find('tr', lambda x: x and x.find('b', lambda y: y and y.startswith("")))
+    height = None
+    foot = None
+    position = None
+
+
+def backfill_club_season(driver, club_season_href, comp_id, backfill_players):
     global club_season_table, club_season_dictionary
 
     club_href = get_club_href_from_season(club_season_href)
@@ -409,14 +431,21 @@ def backfill_club_season(driver, club_season_href, comp_id):
 
     # Assume that the DataFrame.to_sql method is called externally
 
-    try:
-        driver.get(club_season_href + "/Players")
-        html = driver.page_source
-        code = BeautifulSoup(html, 'html5lib')
+    if backfill_players:
+        try:
+            driver.get(club_season_href + "/Players")
+            html = driver.page_source
+            code = BeautifulSoup(html, 'html5lib')
 
-
-    except (TimeoutException, SessionNotCreatedException):
-        print("Error loading Players page for " + club_season_href)
+            main_table = code.find('div', id="maincontent").find('td', attrs={"class": "TDmain"}).find_all('table')[1]
+            entries = main_table.find_all('tr')
+            for entry in entries:
+                actual_entry = entry.find('a', href=lambda x: x and x.startswith('/footballer/'))
+                if actual_entry:
+                    player_href = (base_url + actual_entry['href'])[:-1]
+                    backfill_player(driver, player_href)
+        except (TimeoutException, SessionNotCreatedException):
+            print("Error loading Players page for " + club_season_href)
 
 
 def backfill_seasons(driver):
@@ -459,8 +488,8 @@ def backfill_seasons(driver):
                             away_col = columns[4].find('a')
                             away_season_href = base_url + away_col['href']
 
-                            backfill_club_season(driver, home_season_href, id)
-                            backfill_club_season(driver, away_season_href, id)
+                            backfill_club_season(driver, home_season_href, id, False)
+                            backfill_club_season(driver, away_season_href, id, False)
 
                             home_id = get_club_from_season(home_season_href)
                             away_id = get_club_from_season(away_season_href)
@@ -481,12 +510,13 @@ def backfill_everything():
     try:
         driver = webdriver.Chrome("./chromedriver.exe", chrome_options=chrome_options)
         driver.set_page_load_timeout(10)
-
+        
         # backfill_competitions(driver)
         backfill_seasons(driver)
     except (TimeoutException, SessionNotCreatedException):
         print("Error loading " + str(fl_ref))
     finally:
         driver.quit()
+
 
 backfill_everything()
