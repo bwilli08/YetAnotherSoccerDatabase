@@ -9,7 +9,7 @@ function club_search(query, cb) {
 }
 
 function club_stats(query, cb) {
-    return fetch(`/club-stats?club_id=${query}`, {
+    return fetch(`/search/club-season?club_id=${query}`, {
         accept: "application/json"
     })
         .then(checkStatus)
@@ -32,17 +32,8 @@ function player_search(query, position, cb) {
         .then(cb);
 }
 
-function player_clubs(query, cb) {
-    return fetch(`/player-clubs?id=${query}`, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
-}
-
 function stat_search(query, cb) {
-    return fetch(`/player-stats?id=${query}`, {
+    return fetch(`/search/player-season?player_id=${query}`, {
         accept: "application/json"
     })
         .then(checkStatus)
@@ -65,5 +56,5 @@ function parseJSON(response) {
     return response.json();
 }
 
-const Client = {club_search, club_stats, player_search, player_clubs, stat_search};
+const Client = {club_search, club_stats, player_search, stat_search};
 export default Client;

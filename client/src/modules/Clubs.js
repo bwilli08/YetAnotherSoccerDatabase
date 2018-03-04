@@ -88,7 +88,8 @@ class Clubs extends Component {
         const clubRows = clubs.map((club, idx) => (
             <tr key={idx}>
                 <td className="right aligned">{club.club_name}</td>
-                <td className="right aligned">{club.comp}</td>
+                <td className="right aligned">{club.country}</td>
+                <td className="right aligned">{club.stadium}</td>
                 <td>
                     <Button onClick={() => this.getClubStats(club)}>View</Button>
                 </td>
@@ -97,14 +98,15 @@ class Clubs extends Component {
 
         const statRows = stats.map((stat, idx) => (
             <tr>
-                <td>{stat.season}</td>
-                <td>{stat.comp}</td>
-                <td>{stat.goals}</td>
-                <td>{stat.assists}</td>
-                <td>{stat.fouls}</td>
-                <td>{stat.yc}</td>
-                <td>{stat.rc}</td>
-                <td>{stat.shots}</td>
+                <td>{stat.year}</td>
+                <td>{stat.comp_name}</td>
+                <td>{stat.final_place}</td>
+                <td>{stat.points}</td>
+                <td>{stat.wins}</td>
+                <td>{stat.draws}</td>
+                <td>{stat.losses}</td>
+                <td>{stat.goals_scored}</td>
+                <td>{stat.goals_against}</td>
             </tr>
         ));
 
@@ -134,7 +136,8 @@ class Clubs extends Component {
                                 <thead>
                                 <tr>
                                     <th>Club</th>
-                                    <th>Primary Competition</th>
+                                    <th>Country</th>
+                                    <th>Stadium</th>
                                     <th>About</th>
                                 </tr>
                                 </thead>
@@ -150,12 +153,13 @@ class Clubs extends Component {
                                 <tr>
                                     <th>Season</th>
                                     <th>Competition</th>
-                                    <th>Goals</th>
-                                    <th>Assists</th>
-                                    <th>Fouls</th>
-                                    <th>YC</th>
-                                    <th>RC</th>
-                                    <th>Shots</th>
+                                    <th>Final Position</th>
+                                    <th>Points</th>
+                                    <th>Wins</th>
+                                    <th>Draws</th>
+                                    <th>Losses</th>
+                                    <th>Goals For</th>
+                                    <th>Goals Against</th>
                                 </tr>
                                 </thead>
                                 <tbody>

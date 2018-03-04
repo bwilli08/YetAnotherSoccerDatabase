@@ -42,7 +42,7 @@ CREATE TABLE Player (
   dob         DATE,
   height      DECIMAL(3, 2),
   foot        VARCHAR(8),
-  position    VARCHAR(32),
+  position    VARCHAR(64),
 
   UNIQUE KEY (fl_ref)
 

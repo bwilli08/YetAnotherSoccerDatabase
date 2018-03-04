@@ -21,40 +21,61 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static("client/build"));
 }
 
-function getPlayer(req, res) {
-    const player_id = req.query.id;
-    const attribute = req.query.attr;
+app.get("/search/club-season", (req, res) => {
+    const club_id = req.query.club_id;
 
-    if (!player_id) {
+    if (!club_id) {
         res.json({
-            error: "Missing required parameter `id`"
+            error: "Missing required parameter `club_id`"
         });
         return;
     }
 
-    const position_qry = `SELECT * FROM Player WHERE player_id=${player_id}`;
+    const qry =
+        `SELECT *
+        FROM
+            ClubSeason
+                LEFT JOIN
+            (SELECT club_id, club_name, country as club_country FROM Club) club USING (club_id)
+                JOIN
+            (SELECT comp_id, comp_name, year, country as comp_country FROM Competition) comp USING (comp_id)
+        WHERE club_id=${club_id}
+        ORDER BY year DESC`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
+app.get("/search/player-season", (req, res) => {
+    const player_id = req.query.player_id;
+
+    if (!player_id) {
+        res.json({
+            error: "Missing required parameter `player_id`"
+        });
+        return;
+    }
+
+    const qry =
+        `SELECT *
+        FROM
+            PlayerSeason
+                LEFT JOIN
+            (SELECT club_id, club_name, country as club_country FROM Club) club USING (club_id)
+                JOIN
+            (SELECT comp_id, comp_name, year, country FROM Competition) c USING (comp_id)
+        WHERE player_id = ${player_id}`;
 
     db.query(position_qry, function (err, result) {
         if (err) throw err;
 
-        if (attribute) {
-            res(result[0][attribute]);
-        } else {
-            res(result[0]);
-        }
+        res.json(result);
     });
-}
+});
 
-function decideStatTable(position, cb) {
-    if (outfield_positions.indexOf(position) >= 0) {
-        cb("OutfieldPlayerStat");
-    } else if (position == "GK") {
-        cb("GoalkeeperStat");
-    } else {
-        console.log(`Unknown player position`);
-        return;
-    }
-}
 app.get("/search/clubs", (req, res) => {
     const name = req.query.name;
 
@@ -65,15 +86,7 @@ app.get("/search/clubs", (req, res) => {
         return;
     }
 
-    var qry = `SELECT club_id, club_name, comp
-                FROM
-                    (SELECT *
-                    FROM Club
-                    WHERE club_name LIKE '%${name}%') clubs
-                LEFT JOIN
-                    ClubSeason
-                USING (club_id)
-                GROUP BY club_id`;
+    const qry = `SELECT * FROM Club WHERE club_name LIKE '%${name}%'`;
 
     db.query(qry, function (err, result) {
         if (err) throw err;
@@ -105,118 +118,6 @@ app.get("/search/players", (req, res) => {
         if (err) throw err;
 
         res.json(result);
-    });
-});
-
-app.get("/player", (req, res) => {
-    getPlayer(req, (result) => res.json(result));
-});
-
-app.get("/player-clubs", (req, res) => {
-    const player_id = req.query.id;
-
-    if (!player_id) {
-        res.json({
-            error: "Missing required parameter `id`"
-        });
-        return;
-    }
-
-    req.query.attr = "position";
-    getPlayer(req, (result) => {
-        const position = result;
-
-        decideStatTable(position, (table) => {
-            const qry = `SELECT club_name
-            FROM   (SELECT season_id
-                    FROM ${table}
-                    WHERE player_id=${player_id}) s
-                LEFT JOIN
-                    (SELECT club_name, season_id
-                     FROM   Club
-                     LEFT JOIN
-                            ClubSeason
-                     USING (club_id)) c
-                USING (season_id)
-            GROUP BY club_name
-            ORDER BY COUNT(*) DESC`;
-
-            db.query(qry, function (err, result) {
-                if (err) throw err;
-                res.json(result);
-            });
-        });
-    });
-});
-
-app.get("/club-stats", (req, res) => {
-    const club_id = req.query.club_id;
-
-    if (!club_id) {
-        res.json({
-            error: "Missing required parameter `club_id`"
-        });
-        return;
-    }
-
-    db.query(
-        `SELECT
-            season,
-            comp,
-            SUM(goals) as goals,
-            SUM(assists) as assists,
-            SUM(fouls) as fouls,
-            SUM(cards_yellow) as yc,
-            SUM(cards_red) as rc,
-            SUM(shots_on_target) as shots
-        FROM
-            (SELECT *
-            FROM ClubSeason
-            WHERE club_id='${club_id}') seasons
-        LEFT JOIN
-            OutfieldPlayerStat
-        USING (season_id)
-        GROUP BY season_id, season, comp
-        ORDER BY season ASC`,
-        function (err, result) {
-            if (err) throw err;
-            res.json(result);
-        });
-});
-
-app.get("/player-stats", (req, res) => {
-    const id = req.query.id;
-
-    if (!id) {
-        res.json({
-            error: "Missing required parameter `id`"
-        });
-        return;
-    }
-
-    req.query.attr = "position";
-    getPlayer(req, (result) => {
-        const position = result;
-
-        decideStatTable(position, (table) => {
-            db.query(`
-            SELECT *
-            FROM
-                ${table}
-            LEFT JOIN
-                (SELECT *
-                FROM Club
-                LEFT JOIN
-                ClubSeason
-                USING (club_id)) club
-            USING (season_id)
-            WHERE player_id=${id}
-            ORDER BY club.season ASC`,
-                function (err, result) {
-                    if (err) throw err;
-                    res.json(result);
-                });
-        });
     });
 });
 

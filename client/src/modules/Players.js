@@ -40,7 +40,6 @@ class Players extends Component {
 
             displayStats: false,
             stats: [],
-            isGoalkeeper: false,
             isStatsSearching: false
         };
     }
@@ -90,11 +89,8 @@ class Players extends Component {
     };
 
     getPlayerStats = (player) => {
-        const isGoalkeeper = player.position === "GK";
-
         this.setState({
             displayStats: true,
-            isGoalkeeper: isGoalkeeper,
             isStatsSearching: true,
             players: [player]
         });
@@ -107,64 +103,23 @@ class Players extends Component {
         });
     };
 
-    getStatHeader = () => {
-        if (this.state.isGoalkeeper) {
-            return (
-                <tr>
-                    <th>Club</th>
-                    <th>Season</th>
-                    <th>Games</th>
-                    <th>Save Percentage</th>
-                </tr>);
-        } else {
-            return (
-                <tr>
-                    <th>Club</th>
-                    <th>Season</th>
-                    <th>Age</th>
-                    <th>Apps</th>
-                    <th>Starts</th>
-                    <th>Subs</th>
-                    <th>MPG</th>
-                    <th>Goals</th>
-                    <th>Assists</th>
-                    <th>Fouls</th>
-                    <th>YC</th>
-                    <th>RC</th>
-                    <th>Shots</th>
-                </tr>);
-        }
-    };
-
     populateRows = (stat, idx) => {
-        if (this.state.isGoalkeeper) {
             return (
                 <tr key={idx}>
                     <td className="right aligned">{stat.club_name}</td>
-                    <td className="right aligned">{stat.season}</td>
-                    <td className="right aligned">{stat.games}</td>
-                    <td className="right aligned">{stat.save_perc}</td>
-                </tr>
-            )
-        } else {
-            return (
-                <tr key={idx}>
-                    <td className="right aligned">{stat.club_name}</td>
-                    <td className="right aligned">{stat.season}</td>
-                    <td className="right aligned">{stat.age}</td>
-                    <td className="right aligned">{stat.games}</td>
-                    <td className="right aligned">{stat.games_starts}</td>
-                    <td className="right aligned">{stat.games_subs}</td>
-                    <td className="right aligned">{stat.minutes_per_game}</td>
+                    <td className="right aligned">{stat.comp_name}</td>
+                    <td className="right aligned">{stat.year}</td>
+                    <td className="right aligned">{stat.most_used_position}</td>
+                    <td className="right aligned">{stat.games_played}</td>
+                    <td className="right aligned">{stat.minutes_played}</td>
                     <td className="right aligned">{stat.goals}</td>
                     <td className="right aligned">{stat.assists}</td>
-                    <td className="right aligned">{stat.fouls}</td>
-                    <td className="right aligned">{stat.cards_yellow}</td>
-                    <td className="right aligned">{stat.cards_red}</td>
-                    <td className="right aligned">{stat.shots_on_target}</td>
+                    <td className="right aligned">{stat.yellow_cards}</td>
+                    <td className="right aligned">{stat.red_cards}</td>
+                    <td className="right aligned">{stat.goals_conceded}</td>
+                    <td className="right aligned">{stat.saves}</td>
                 </tr>
             )
-        }
     };
 
     toggleDropDown() {
@@ -186,7 +141,10 @@ class Players extends Component {
         const playerRows = players.map((player, idx) => (
             <tr key={idx}>
                 <td className="right aligned">{player.name}</td>
-                <td className="right aligned">{player.date_of_birth}</td>
+                <td className="right aligned">{player.nationality}</td>
+                <td className="right aligned">{player.dob}</td>
+                <td className="right aligned">{player.height}</td>
+                <td className="right aligned">{player.foot}</td>
                 <td className="right aligned">{player.position}</td>
                 <td>
                     <Button onClick={() => this.getPlayerStats(player)}>View Stats</Button>
@@ -194,7 +152,6 @@ class Players extends Component {
             </tr>
         ));
 
-        const statHeader = this.getStatHeader();
         const statRows = stats.map((stat, idx) => this.populateRows(stat, idx));
         const showNoResultMessage = playerRows.length === 0 && this.state.displayPlayers && !this.state.isPlayerSearching;
         const showSearchTable = this.state.displayPlayers && !showNoResultMessage;
@@ -237,9 +194,11 @@ class Players extends Component {
                                 <thead>
                                 <tr>
                                     <th>Name</th>
+                                    <th>Nationality</th>
                                     <th>DOB</th>
+                                    <th>Height</th>
+                                    <th>Pref. Foot</th>
                                     <th>Position</th>
-                                    <th>Stats</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -251,7 +210,20 @@ class Players extends Component {
                             <h4>Game Statistics</h4>
                             <Table>
                                 <thead>
-                                {statHeader}
+                                    <tr>
+                                        <th>Club</th>
+                                        <th>Comp</th>
+                                        <th>Season</th>
+                                        <th>Position</th>
+                                        <th>Apps</th>
+                                        <th>Minutes</th>
+                                        <th>Goals</th>
+                                        <th>Assists</th>
+                                        <th>YC</th>
+                                        <th>RC</th>
+                                        <th>Goals Conceded</th>
+                                        <th>Saves</th>
+                                    </tr>
                                 </thead>
                                 <tbody>
                                 {statRows}

@@ -9,10 +9,19 @@ from selenium import webdriver
 from selenium.common.exceptions import SessionNotCreatedException
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
 from sqlalchemy import create_engine
 
 sys.path.insert(0, '../internal')
 import databaseinfo
+
+# Verbose Flag
+verbose = None
+if not set(sys.argv).isdisjoint(['-v', '--verbose']):
+    print("Verbose flag set to true, printing log messages.")
+    verbose = True
+else:
+    verbose = False
 
 # Global Engine Object
 engine = create_engine('mysql+mysqlconnector://{}:{}@{}/{}'.format(
@@ -66,7 +75,8 @@ def add_to_club_table():
 
     new_refs = club_dictionary['table_structure']['fl_ref']
 
-    print("New club refs:" + str(new_refs))
+    if verbose:
+        print("New club refs:" + str(new_refs))
 
     if new_refs:
         refs = []
@@ -286,7 +296,8 @@ def add_club(fl_ref, club_name, stadium, country):
     table['stadium'].append(stadium)
     table['country'].append(country)
 
-    print('Added club {} with stadium {} [{}] ({})'.format(club_name, stadium, country, fl_ref))
+    if verbose:
+        print('Added club {} with stadium {} [{}] ({})'.format(club_name, stadium, country, fl_ref))
 
 
 def add_competition(comp_name, country, year, fl_ref):
@@ -297,7 +308,8 @@ def add_competition(comp_name, country, year, fl_ref):
     table['fl_ref'].append(fl_ref)
     table['finished_backfill'].append(False)
 
-    print('Added competition {} for {} [{}] ({})'.format(comp_name, year, country, fl_ref))
+    if verbose:
+        print('Added competition {} for {} [{}] ({})'.format(comp_name, year, country, fl_ref))
 
 
 def add_player(name, nationality, dob, height, foot, position, fl_ref):
@@ -310,9 +322,9 @@ def add_player(name, nationality, dob, height, foot, position, fl_ref):
     table['position'].append(position)
     table['fl_ref'].append(fl_ref)
 
-    print(
-    'Added player {} [{}], born {}. Position: {}, Height: {}, Foot: {} ({})'.format(name, nationality, dob, position,
-                                                                                    height, foot, fl_ref))
+    if verbose:
+        print('Added player {} [{}], born {}. Position: {}, Height: {}, Foot: {} ({})'
+              .format(name, nationality, dob, position, height, foot, fl_ref))
 
 
 def add_club_season(club_id, comp_id, fl_ref):
@@ -330,7 +342,8 @@ def add_club_season(club_id, comp_id, fl_ref):
     table['goals_against'].append(-1)
     table['players_backfilled'].append(False)
 
-    print('Added club season for ({}, {}) ({})'.format(club_id, comp_id, fl_ref))
+    if verbose:
+        print('Added club season for ({}, {}) ({})'.format(club_id, comp_id, fl_ref))
 
 
 def add_temporary_game_to_database(comp_id, stage, fl_ref, home_id, away_id):
@@ -361,7 +374,8 @@ def add_temporary_game_to_database(comp_id, stage, fl_ref, home_id, away_id):
     table['away_yellow_cards'].append(-1)
     table['away_red_cards'].append(-1)
 
-    print('Added game in {}: {} vs {} [{}] ({})'.format(comp_id, home_id, away_id, stage, fl_ref))
+    if verbose:
+        print('Added game in {}: {} vs {} [{}] ({})'.format(comp_id, home_id, away_id, stage, fl_ref))
 
 
 # Helper method
@@ -391,14 +405,18 @@ def backfill_competitions(driver):
             comp_url = base_url + comp['href'][:-1]
 
             if comp_url == "https://www.football-lineups.com/supercup":
-                print("Skipping supercups")
+                if verbose:
+                    print("Skipping supercups")
                 continue
 
             if comp_url not in dict(competition_table):
                 driver.get(comp_url)
                 comp_html = driver.page_source
                 comp_page = BeautifulSoup(comp_html, 'html5lib')
-                comp_main = comp_page.find('div', id='maintitle').find('td', attrs={"class": "TDmain"}).find('td')
+                comp_main = comp_page \
+                    .find('div', id='maintitle') \
+                    .find('td', attrs={"class": "TDmain"}) \
+                    .find('td')
                 comp_name = comp_main.find('font')
                 if comp_name.find('a'):
                     comp_name = comp_name.find('a').get_text()
@@ -422,7 +440,8 @@ def backfill_competitions(driver):
 
                 add_to_database(competition_dictionary)
             else:
-                print(comp_url + " already in database.")
+                if verbose:
+                    print(comp_url + " already in database.")
     except (TimeoutException, SessionNotCreatedException):
         print("error backfilling competitions")
 
@@ -468,9 +487,9 @@ def backfill_player(driver, player_href):
         name = str(player_main.find(text=True, recursive=False))
         nationality = str(player_main.find('h1').find('img')['title'])
         dob = None
-        height = None
-        foot = None
-        position = None
+        height = "0"
+        foot = "Unknown"
+        position = "Unknown"
 
         for tr in info_table.find_all('tr'):
             txt = tr.get_text()
@@ -506,16 +525,23 @@ def backfill_club_season(driver, club_season_href, comp_id):
 
 
 def begin_player_backfill(driver):
-    for (club_season_href, (_, _, players_backfilled)) in dict(club_season_table):
+    for (club_season_href, (_, _, players_backfilled)) in club_season_table:
+        if verbose:
+            print("Backfilling players for '{}' [{}]".format(club_season_href, players_backfilled))
+
         if not players_backfilled:
             try:
                 player_list = []
                 driver.get(club_season_href + "/Players")
+                WebDriverWait(driver, 10).until(lambda x: 'players' in driver.title)
                 html = driver.page_source
                 code = BeautifulSoup(html, 'html5lib')
 
-                main_table = code.find('div', id="maincontent").find('td', attrs={"class": "TDmain"}).find_all('table')[
-                    1]
+                main_table = code \
+                    .find('div', id="maincontent") \
+                    .find('td', attrs={"class": "TDmain"}) \
+                    .find('table', attrs={"border": "0", "width": "690", "bgcolor": "#f0f0f0"})
+
                 entries = main_table.find_all('tr')
                 for entry in entries:
                     actual_entry = entry.find('a', href=lambda x: x and x.startswith('/footballer/'))
@@ -534,7 +560,8 @@ def backfill_seasons(driver):
 
     for (fl_ref, (id, is_finished)) in competition_table:
         try:
-            print("{} {} [{}]".format(str(fl_ref), str(id), str(is_finished)))
+            if verbose:
+                print("{} {} [{}]".format(str(fl_ref), str(id), str(is_finished)))
 
             if not is_finished:
                 # Make sure the clubs are backfilled
@@ -593,8 +620,8 @@ def backfill_everything():
         driver = webdriver.Chrome("./chromedriver.exe", chrome_options=chrome_options)
         driver.set_page_load_timeout(10)
 
-        backfill_competitions(driver)
-        backfill_seasons(driver)
+        # backfill_competitions(driver)
+        # backfill_seasons(driver)
         begin_player_backfill(driver)
     except (TimeoutException, SessionNotCreatedException):
         print("Error loading " + str(fl_ref))
