@@ -1,149 +1,145 @@
-#DROP DATABASE IF EXISTS LineupsDatabase;
+#DROP DATABASE IF EXISTS SportsMonksDB;
 
-#CREATE DATABASE LineupsDatabase
+#CREATE DATABASE FootballDataDB
 #  DEFAULT CHARACTER SET utf8
 #  DEFAULT COLLATE utf8_general_ci;
 
-USE LineupsDatabase;
+USE SportsMonksDB;
 
-CREATE TABLE Positions (
-  # Positions are granular, i.e. LW, RW, ST, etc.
-  position VARCHAR(8) PRIMARY KEY,
-  # Roles are broad, i.e. DF (defense), MF (midfield), etc.
-  role     VARCHAR(8)
-);
-
-CREATE TABLE Club (
-  club_id   INTEGER PRIMARY KEY AUTO_INCREMENT,
-  fl_ref    VARCHAR(128),
-  club_name VARCHAR(64),
-  stadium   VARCHAR(64),
-  country   VARCHAR(64),
-
-  UNIQUE KEY (fl_ref)
-);
-
-CREATE TABLE Competition (
-  comp_id   INTEGER PRIMARY KEY AUTO_INCREMENT,
-  fl_ref    VARCHAR(128),
-  comp_name VARCHAR(64),
-  country   VARCHAR(64),
-  year      VARCHAR(64),
-  finished_backfill BOOLEAN,
-
-  UNIQUE KEY (fl_ref)
-);
-
-CREATE TABLE Player (
-  player_id   INTEGER PRIMARY KEY AUTO_INCREMENT,
-  fl_ref      VARCHAR(128),
+# Country API - Include leagues
+CREATE TABLE Country (
+  id          INTEGER PRIMARY KEY,
   name        VARCHAR(64),
-  nationality VARCHAR(64),
-  dob         DATE,
-  height      DECIMAL(3, 2),
-  foot        VARCHAR(8),
-  position    VARCHAR(64),
-
-  UNIQUE KEY (fl_ref)
-
-  #FOREIGN KEY (position) REFERENCES Positions(position)
+  continent   VARCHAR(16)
 );
 
+# Venue API - Populate on demand as we go through Clubs
+CREATE TABLE Venue (
+  id INTEGER PRIMARY KEY,
+  name VARCHAR(64),
+  city VARCHAR(64)
+);
+
+# Inferred?
+CREATE TABLE Position (
+  id INTEGER PRIMARY KEY,
+  name VARCHAR(32)
+);
+
+# Leagues API - include country and seasons
+CREATE TABLE Competition (
+  id                  INTEGER PRIMARY KEY,
+  is_cup              BOOLEAN,
+  country_id          INTEGER,
+  name                VARCHAR(64),
+  finished_backfill   BOOLEAN,
+
+  FOREIGN KEY (country_id) REFERENCES Country(id)
+);
+
+# Season API - include league
+CREATE TABLE Season (
+  id          INTEGER PRIMARY KEY,
+  year        VARCHAR(12),
+  league_id   INTEGER,
+
+  FOREIGN KEY (league_id) REFERENCES Competition(id)
+);
+
+# Teams API - include venue and country
+CREATE TABLE Club (
+  id INTEGER PRIMARY KEY,
+  name  VARCHAR(64),
+  country_id  INTEGER,
+  is_national_team BOOLEAN,
+  venue_id  INTEGER,
+
+  FOREIGN KEY (country_id) REFERENCES Country(id),
+  FOREIGN KEY (venue_id) REFERENCES Venue(id)
+);
+
+# Fixture API - populate on-demand
 CREATE TABLE ClubSeason (
-  club_id       INTEGER,
-  comp_id       INTEGER,
-  fl_ref        VARCHAR(128),
+  season_id INTEGER,
+  club_id INTEGER,
 
-  final_place   INTEGER,
-  points        INTEGER,
-  games         INTEGER,
-  wins          INTEGER,
-  draws         INTEGER,
-  losses        INTEGER,
-  goals_scored  INTEGER,
-  goals_against INTEGER,
-
-  players_backfilled BOOLEAN,
-
-  PRIMARY KEY (club_id, comp_id),
-
-  FOREIGN KEY (club_id) REFERENCES Club (club_id),
-  FOREIGN KEY (comp_id) REFERENCES Competition (comp_id),
-
-  UNIQUE KEY (fl_ref)
+  PRIMARY KEY (season_id, club_id),
+  FOREIGN KEY (season_id) REFERENCES Season(id),
+  FOREIGN KEY (club_id) REFERENCES Club(id)
 );
 
-CREATE TABLE Game (
-  game_id            INTEGER PRIMARY KEY AUTO_INCREMENT,
-  comp_id            INTEGER,
-  # Group Stage, Playoffs, League, etc.
-  stage              VARCHAR(64),
-  fl_ref             VARCHAR(128),
+# Player API - include position
+# Have to retrieve by player id, so populate this on-demand (as we go through fixtures?)
+CREATE TABLE Player (
+  id INTEGER PRIMARY KEY,
+  nationality VARCHAR(64),
+  position_id INTEGER,
+  name  VARCHAR(64),
+  birthdate DATE,
+  height  INTEGER,
+  weight  INTEGER,
 
-  home_club_id       INTEGER,
-  home_goals         INTEGER,
-  home_shots         INTEGER,
-  home_shots_on_goal INTEGER,
-  home_fouls         INTEGER,
-  home_corners       INTEGER,
-  home_offsides      INTEGER,
-  home_possession    DECIMAL(4, 2),
-  home_yellow_cards  INTEGER,
-  home_red_cards     INTEGER,
-
-  away_club_id       INTEGER,
-  away_goals         INTEGER,
-  away_shots         INTEGER,
-  away_shots_on_goal INTEGER,
-  away_fouls         INTEGER,
-  away_corners       INTEGER,
-  away_offsides      INTEGER,
-  away_possession    DECIMAL(4, 2),
-  away_yellow_cards  INTEGER,
-  away_red_cards     INTEGER,
-
-  FOREIGN KEY (comp_id, home_club_id) REFERENCES ClubSeason (comp_id, club_id),
-  FOREIGN KEY (comp_id, away_club_id) REFERENCES ClubSeason (comp_id, club_id),
-
-  UNIQUE KEY (fl_ref)
+  FOREIGN KEY (position_id) REFERENCES Position(id)
 );
 
-CREATE TABLE PlayerSeason (
-  player_season_id   INTEGER PRIMARY KEY AUTO_INCREMENT,
-  player_id          INTEGER,
-  comp_id            INTEGER,
-  club_id            INTEGER,
+# Fixture API - Pass in the specific competition that I care about
+CREATE TABLE Fixture (
+  id INTEGER PRIMARY KEY,
+  season_id INTEGER,
+  venue_id INTEGER,
+  league_id INTEGER,
+  home_team_id INTEGER,
+  away_team_id INTEGER,
+  date_of_game DATETIME,
 
-  most_used_position VARCHAR(8),
-  games_played       INTEGER,
-  minutes_played     INTEGER,
-  yellow_cards       INTEGER,
-  red_cards          INTEGER,
-  goals              INTEGER,
-  assists            INTEGER,
-  goals_conceded     INTEGER,
-  saves              INTEGER,
+  # A bunch of stats
+  home_team_score INTEGER,
+  away_team_score INTEGER,
 
-  FOREIGN KEY (player_id) REFERENCES Player (player_id),
-  FOREIGN KEY (comp_id, club_id) REFERENCES ClubSeason (comp_id, club_id)
-  #FOREIGN KEY (most_used_position) REFERENCES Positions(position)
+  FOREIGN KEY (season_id) REFERENCES Season(id),
+  FOREIGN KEY (venue_id) REFERENCES Venue(id),
+  FOREIGN KEY (league_id, home_team_id) REFERENCES ClubSeason(league_id, club_id),
+  FOREIGN KEY (league_id, away_team_id) REFERENCES ClubSeason(league_id, club_id)
 );
 
+# Fixture API - Include lineups and substitutions
 CREATE TABLE PlayerGame (
-  player_match_id  INTEGER PRIMARY KEY AUTO_INCREMENT,
-  game_id          INTEGER,
-  player_season_id INTEGER,
-  position         VARCHAR(8),
-  started          BOOLEAN,
-  minutes_played   INTEGER,
-  yellow_card      BOOLEAN,
-  red_card         BOOLEAN,
-  goals            INTEGER,
-  assists          INTEGER,
-  goals_conceded   INTEGER,
-  saves            INTEGER,
+  player_id INTEGER,
+  fixture_id INTEGER,
+  club_id INTEGER,
+  position VARCHAR(8),
 
-  FOREIGN KEY (game_id) REFERENCES Game (game_id),
-  FOREIGN KEY (player_season_id) REFERENCES PlayerSeason (player_season_id)
-  #FOREIGN KEY (position) REFERENCES Positions(position)
+  started BOOLEAN,
+  minutes_played INTEGER,
+
+  goals_scored INTEGER,
+  goals_conceded INTEGER,
+  assists INTEGER,
+
+  shots_on_goal INTEGER,
+  shots_total INTEGER,
+
+  fouls_committed INTEGER,
+  fouls_drawn INTEGER,
+
+  interceptions INTEGER,
+  saves INTEGER,
+  clearances INTEGER,
+  tackles INTEGER,
+  offsides INTEGER,
+  blocks INTEGER,
+
+  pen_saved INTEGER,
+  pen_missed INTEGER,
+  pen_scored INTEGER,
+
+  passes_total INTEGER,
+  passes_accuracy INTEGER,
+  crosses_total INTEGER,
+  crosses_accuracy INTEGER,
+
+  PRIMARY KEY (player_id, fixture_id),
+  FOREIGN KEY (player_id) REFERENCES Player(id),
+  FOREIGN KEY (fixture_id) REFERENCES Fixture(id),
+  FOREIGN KEY (club_id) REFERENCES Club(id)
 );

@@ -44,7 +44,7 @@ competition_table = convert_sql_result_to_set("SELECT fl_ref, comp_id, finished_
                                               (lambda x: (x[0], (x[1], x[2]))))
 club_table = convert_sql_result_to_set("SELECT fl_ref, club_id FROM Club", (lambda x: (x[0], x[1])))
 player_table = convert_sql_result_to_set("SELECT fl_ref, player_id FROM Player", (lambda x: (x[0], x[1])))
-club_season_table = convert_sql_result_to_set("SELECT fl_ref, club_id, comp_id, players_backfilled FROM ClubSeason",
+club_season_table = convert_sql_result_to_set("SELECT fl_ref, club_id, comp_id, players_backfilled FROM ClubSeason WHERE priority=1",
                                               (lambda x: (x[0], (x[1], x[2], x[3]))))
 game_table = convert_sql_result_to_set("SELECT fl_ref, game_id FROM Game", (lambda x: (x[0], x[1])))
 
@@ -52,8 +52,7 @@ game_table = convert_sql_result_to_set("SELECT fl_ref, game_id FROM Game", (lamb
 chrome_options = Options()
 chrome_options.add_argument("--headless")
 chrome_options.add_argument("log-level=3")
-chrome_options.add_argument(
-    "load-extension=C:/Users/Brent Williams/AppData/Local/Google/Chrome/User Data/Default/Extensions/gighmmpiobklfepjocnamgkkbiglidom")
+#chrome_options.add_extension("Adblock-Plus_v1.13.5.crx")
 
 # Month to Num dictionary - Used because football-lineups.com stores dates in DD-Mon-YY format
 month_dict = {v: k for k, v in enumerate(calendar.month_abbr)}
@@ -476,7 +475,14 @@ def backfill_club(driver, club_href):
 
 
 def backfill_player(driver, player_href):
-    if player_href not in dict(player_table):
+    global player_table
+
+    is_backfilled_already = player_href in dict(player_table)
+
+    if verbose:
+        print("Backfilling {} [{}]".format(player_href, is_backfilled_already))
+
+    if not is_backfilled_already:
         driver.get(player_href)
         html = driver.page_source
         code = BeautifulSoup(html, 'html5lib')
@@ -487,7 +493,7 @@ def backfill_player(driver, player_href):
         name = str(player_main.find(text=True, recursive=False))
         nationality = str(player_main.find('h1').find('img')['title'])
         dob = None
-        height = "0"
+        height = "0.0"
         foot = "Unknown"
         position = "Unknown"
 
@@ -500,14 +506,14 @@ def backfill_player(driver, player_href):
                 day = dob_arr[0]
                 dob = "{}-{}-{}".format(year, month, day)
             elif "Height" in txt:
-                height = txt.split(":")[1].strip()
+                height = txt.split(":")[1].strip() if txt.split(":")[1].strip() else height
             elif "Fav.foot" in txt:
-                foot = txt.split(":")[1].strip()
+                foot = txt.split(":")[1].strip() if txt.split(":")[1].strip() else foot
             elif "Position" in txt:
-                position = txt.split(":")[1].strip()
+                position = txt.split(":")[1].strip() if txt.split(":")[1].strip() else position
 
         add_player(name, nationality, dob, height, foot, position, player_href)
-        add_to_database(player_dictionary)
+        # Assume that addition to database happens separately
 
 
 def backfill_club_season(driver, club_season_href, comp_id):
@@ -525,6 +531,8 @@ def backfill_club_season(driver, club_season_href, comp_id):
 
 
 def begin_player_backfill(driver):
+    global club_season_table, player_dictionary
+
     for (club_season_href, (_, _, players_backfilled)) in club_season_table:
         if verbose:
             print("Backfilling players for '{}' [{}]".format(club_season_href, players_backfilled))
@@ -551,6 +559,9 @@ def begin_player_backfill(driver):
 
                 for player_href in player_list:
                     backfill_player(driver, player_href)
+
+                add_to_database(player_dictionary)
+                engine.execute("UPDATE ClubSeason SET players_backfilled=true WHERE fl_ref='{}'".format(club_season_href))
             except (TimeoutException, SessionNotCreatedException):
                 print("Error loading Players page for " + club_season_href)
 
