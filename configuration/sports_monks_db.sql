@@ -15,9 +15,10 @@ CREATE TABLE Country (
 
 # Venue API - Populate on demand as we go through Clubs
 CREATE TABLE Venue (
-  id   INTEGER PRIMARY KEY,
-  name VARCHAR(64),
-  city VARCHAR(64)
+  id       INTEGER PRIMARY KEY,
+  name     VARCHAR(64),
+  city     VARCHAR(64),
+  capacity INTEGER
 );
 
 # Inferred?
@@ -39,14 +40,15 @@ CREATE TABLE Competition (
 
 # Season API - include league
 CREATE TABLE Season (
-  id        INTEGER PRIMARY KEY,
-  year      VARCHAR(12),
-  league_id INTEGER,
+  id                INTEGER PRIMARY KEY,
+  year              VARCHAR(12),
+  league_id         INTEGER,
+  finished_backfill BOOLEAN,
 
   FOREIGN KEY (league_id) REFERENCES Competition (id)
 );
 
-# Teams API - include venue and country
+# Populate as we go through ClubSeason
 CREATE TABLE Club (
   id               INTEGER PRIMARY KEY,
   name             VARCHAR(64),
@@ -58,7 +60,7 @@ CREATE TABLE Club (
   FOREIGN KEY (venue_id) REFERENCES Venue (id)
 );
 
-# Fixture API - populate on-demand
+# Club by Season API
 CREATE TABLE ClubSeason (
   season_id INTEGER,
   club_id   INTEGER,
@@ -68,6 +70,43 @@ CREATE TABLE ClubSeason (
   FOREIGN KEY (club_id) REFERENCES Club (id)
 );
 
+# Populate this table afterwards
+CREATE TABLE ClubSeasonStats (
+  season_id             INTEGER,
+  club_id               INTEGER,
+
+  win_total             INTEGER,
+  win_home              INTEGER,
+  win_away              INTEGER,
+
+  draw_total            INTEGER,
+  draw_home             INTEGER,
+  draw_away             INTEGER,
+
+  lost_total            INTEGER,
+  lost_home             INTEGER,
+  lost_away             INTEGER,
+
+  goals_for_total       INTEGER,
+  goals_for_home        INTEGER,
+  goals_for_away        INTEGER,
+
+  goals_against_total   INTEGER,
+  goals_against_home    INTEGER,
+  goals_against_away    INTEGER,
+
+  clean_sheet_total     INTEGER,
+  clean_sheet_home      INTEGER,
+  clean_sheet_away      INTEGER,
+
+  failed_to_score_total INTEGER,
+  failed_to_score_home  INTEGER,
+  failed_to_score_away  INTEGER,
+
+  PRIMARY KEY (season_id, club_id),
+  FOREIGN KEY (season_id, club_id) REFERENCES ClubSeason (season_id, club_id)
+);
+
 # Player API - include position
 # Have to retrieve by player id, so populate this on-demand (as we go through fixtures?)
 CREATE TABLE Player (
@@ -75,10 +114,34 @@ CREATE TABLE Player (
   nationality VARCHAR(64),
   position_id INTEGER,
   name        VARCHAR(64),
+  nickname    VARCHAR(64),
   birthdate   DATE,
   height      INTEGER,
   weight      INTEGER,
 
+  FOREIGN KEY (position_id) REFERENCES Position (id)
+);
+
+CREATE TABLE PlayerSeason (
+  player_id      INTEGER,
+  season_id      INTEGER,
+  club_id        INTEGER,
+  position_id    INTEGER,
+  roster_number  INTEGER,
+
+  minutes_played INTEGER,
+  appearances    INTEGER,
+  sub_apps       INTEGER,
+
+  goals          INTEGER,
+  assists        INTEGER,
+  yellow_cards   INTEGER,
+  yellow_red     INTEGER,
+  red_cards      INTEGER,
+
+  PRIMARY KEY (player_id, season_id, club_id),
+  FOREIGN KEY (player_id) REFERENCES Player (id),
+  FOREIGN KEY (season_id, club_id) REFERENCES ClubSeason (season_id, club_id),
   FOREIGN KEY (position_id) REFERENCES Position (id)
 );
 
@@ -105,6 +168,7 @@ CREATE TABLE Fixture (
 CREATE TABLE PlayerGame (
   player_id        INTEGER,
   fixture_id       INTEGER,
+  season_id        INTEGER,
   club_id          INTEGER,
   position         VARCHAR(8),
 
@@ -138,7 +202,6 @@ CREATE TABLE PlayerGame (
   crosses_accuracy INTEGER,
 
   PRIMARY KEY (player_id, fixture_id),
-  FOREIGN KEY (player_id) REFERENCES Player (id),
-  FOREIGN KEY (fixture_id) REFERENCES Fixture (id),
-  FOREIGN KEY (club_id) REFERENCES Club (id)
+  FOREIGN KEY (player_id, season_id, club_id) REFERENCES PlayerSeason (player_id, season_id, club_id),
+  FOREIGN KEY (fixture_id) REFERENCES Fixture (id)
 );
