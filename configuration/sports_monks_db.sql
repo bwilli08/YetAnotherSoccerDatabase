@@ -33,7 +33,6 @@ CREATE TABLE Competition (
   is_cup            BOOLEAN,
   country_id        INTEGER,
   name              VARCHAR(64),
-  finished_backfill BOOLEAN,
 
   FOREIGN KEY (country_id) REFERENCES Country (id)
 );
@@ -64,6 +63,8 @@ CREATE TABLE Club (
 CREATE TABLE ClubSeason (
   season_id INTEGER,
   club_id   INTEGER,
+  finished_lineup_backfill BOOLEAN,
+  finished_fixture_backfill BOOLEAN,
 
   PRIMARY KEY (season_id, club_id),
   FOREIGN KEY (season_id) REFERENCES Season (id),

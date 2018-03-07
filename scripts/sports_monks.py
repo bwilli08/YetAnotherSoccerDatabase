@@ -43,8 +43,9 @@ invalid_seasons = convert_sql_result_to_list("SELECT id FROM Season WHERE league
 seasons = convert_sql_result_to_list("SELECT id, finished_backfill FROM Season WHERE league_id!=0",
                                      (lambda x: (x[0], x[1])))
 clubs = convert_sql_result_to_list("SELECT id FROM Club", (lambda x: x[0]))
-club_seasons = convert_sql_result_to_list("SELECT season_id, club_id, finished_backfill FROM ClubSeason",
-                                          (lambda x: ((x[0], x[1]), x[2])))
+club_seasons = convert_sql_result_to_list(
+    "SELECT season_id, club_id, finished_lineup_backfill, finished_fixture_backfill FROM ClubSeason",
+    (lambda x: ((x[0], x[1]), (x[2], x[3]))))
 players = convert_sql_result_to_list("SELECT id FROM Player", (lambda x: x[0]))
 player_seasons = convert_sql_result_to_list("SELECT player_id, season_id, club_id FROM PlayerSeason",
                                             (lambda x: (x[0], x[1], x[2])))
@@ -66,7 +67,7 @@ def sports_monks_api(api_string, additional_params):
     endpoint = base_url + api_string
     params = merge_dicts(token_param, additional_params)
     print((endpoint, params))
-    time.sleep(2.4)
+    time.sleep(1.5)
     return requests.get(endpoint, headers=headers, params=params).json()
 
 
@@ -128,8 +129,7 @@ competition_dict = {
     'id': [],
     'is_cup': [],
     'country_id': [],
-    'name': [],
-    'finished_backfill': []
+    'name': []
 }
 
 season_dict = {
@@ -150,7 +150,8 @@ club_dict = {
 club_season_dict = {
     'season_id': [],
     'club_id': [],
-    'finished_backfill': []
+    'finished_lineup_backfill': [],
+    'finished_fixture_backfill': []
 }
 
 player_dict = {
@@ -255,7 +256,6 @@ def parse_competition_data(data):
         competition_dict['is_cup'].append(is_cup)
         competition_dict['country_id'].append(country_id)
         competition_dict['name'].append(name)
-        competition_dict['finished_backfill'].append(False)
         competitions.append(id)
 
 
@@ -317,9 +317,10 @@ def parse_club_season_data(season_id, data):
         if (season_id, club_id) not in dict(club_seasons):
             club_season_dict['season_id'].append(season_id)
             club_season_dict['club_id'].append(club_id)
-            club_season_dict['finished_backfill'].append(False)
+            club_season_dict['finished_lineup_backfill'].append(False)
+            club_season_dict['finished_fixture_backfill'].append(False)
 
-            club_seasons.append(((season_id, club_id), False))
+            club_seasons.append(((season_id, club_id), (False, False)))
 
 
 def optional_attr(data, key, default):
@@ -495,8 +496,8 @@ def add_player(player_id):
 def populate_lineups():
     global club_seasons, position_dict, player_dict, player_season_dict
 
-    for ((season_id, club_id), finished_backfill) in club_seasons:
-        if not finished_backfill:
+    for ((season_id, club_id), (finished_lineup_backfill, finished_fixture_backfill)) in club_seasons:
+        if not finished_lineup_backfill:
             paginated_request("/squad/season/{}/team/{}".format(season_id, club_id), {'include': 'position'},
                               (lambda x: parse_lineup_data(season_id, club_id, x)))
 
@@ -509,11 +510,12 @@ def populate_lineups():
             # Add Player Season
             dataframe_insert(player_season_dict, "PlayerSeason")
 
-            club_seasons.remove(((season_id, club_id), finished_backfill))
-            club_seasons.append(((season_id, club_id), True))
+            club_seasons.remove(((season_id, club_id), (finished_lineup_backfill, finished_fixture_backfill)))
+            club_seasons.append(((season_id, club_id), (True, finished_fixture_backfill)))
             engine.execute(
-                "UPDATE ClubSeason SET finished_backfill=true WHERE season_id='{}' AND club_id='{}'".format(season_id,
-                                                                                                            club_id))
+                "UPDATE ClubSeason SET finished_lineup_backfill=true WHERE season_id='{}' AND club_id='{}'".format(
+                    season_id,
+                    club_id))
 
 
 # populate_countries()
