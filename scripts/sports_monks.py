@@ -215,6 +215,8 @@ player_game_dict = {
     'tackles': [],
     'offsides': [],
     'blocks': [],
+    'yellow_cards': [],
+    'red_cards': [],
     'pen_saved': [],
     'pen_missed': [],
     'pen_scored': [],
@@ -479,14 +481,66 @@ def parse_fixture_lineup_data(season_id, data):
             crosses_accuracy = passing['crosses_accuracy']
 
 
+            player_game_dict['player_id'].append(player_id)
+            player_game_dict['fixture_id'].append(fixture_id)
+            player_game_dict['season_id'].append(season_id)
+            player_game_dict['club_id'].append(club_id)
+            player_game_dict['position'].append(position)
+            player_game_dict['minutes_played'].append(minutes_played)
+            player_game_dict['goals_scored'].append(goals_scored)
+            player_game_dict['goals_conceded'].append(goals_conceded)
+            player_game_dict['assists'].append(assists)
+            player_game_dict['shots_on_goal'].append(shots_on_goal)
+            player_game_dict['shots_total'].append(shots_total)
+            player_game_dict['fouls_committed'].append(fouls_committed)
+            player_game_dict['fouls_drawn'].append(fouls_drawn)
+            player_game_dict['interceptions'].append(interceptions)
+            player_game_dict['saves'].append(saves)
+            player_game_dict['clearances'].append(clearances)
+            player_game_dict['tackles'].append(tackles)
+            player_game_dict['offsides'].append(offsides)
+            player_game_dict['blocks'].append(blocks)
+            player_game_dict['yellow_cards'].append(yellow_cards)
+            player_game_dict['red_cards'].append(red_cards)
+            player_game_dict['pen_saved'].append(pen_saved)
+            player_game_dict['pen_missed'].append(pen_missed)
+            player_game_dict['pen_scored'].append(pen_scored)
+            player_game_dict['passes_total'].append(passes_total)
+            player_game_dict['passes_accuracy'].append(passes_accuracy)
+            player_game_dict['crosses_total'].append(crosses_total)
+            player_game_dict['crosses_accuracy'].append(crosses_accuracy)
+
+            player_games.append((player_id, fixture_id))
+
+
 
 def parse_fixture_data(data):
     global fixture_dict, fixtures
 
     id = data['id']
     if id not in fixtures:
-        parse_fixture_lineup_data(data['lineup']['data'])
-    print()
+        season_id = data['season_id']
+        venue_id = data['venue_id']
+        home_team_id = data['localteam_id']
+        away_team_id = data['visitorteam_id']
+        date_of_game = data['time']['starting_at']['date']
+        scores = data['scores']
+        home_team_score = scores['localteam_score']
+        away_team_score = scores['visitorteam_score']
+
+        fixture_dict['id'].append(id)
+        fixture_dict['season_id'].append(season_id)
+        fixture_dict['venue_id'].append(venue_id)
+        fixture_dict['home_team_id'].append(home_team_id)
+        fixture_dict['away_team_id'].append(away_team_id)
+        fixture_dict['date_of_game'].append(date_of_game)
+        fixture_dict['home_team_score'].append(home_team_score)
+        fixture_dict['away_team_score'].append(away_team_score)
+
+        fixtures.append(id)
+
+        parse_fixture_lineup_data(season_id, data['lineup']['data'])
+
 
 
 ##### Workflow methods
@@ -621,7 +675,7 @@ def populate_fixtures():
     for ((season_id, club_id), (finished_lineup_backfill, finished_fixture_backfill)) in club_seasons:
         if not finished_fixture_backfill:
             paginated_request("/fixtures/between/1990-01-01/2018-03-07/{}".format(club_id), {'include': 'lineup,substitution'},
-                              (lambda x: parse_fixture_data(season_id, x)))
+                              (lambda x: parse_fixture_data(x)))
 
             # Add positions
             dataframe_insert(fixture_dict, "Fixture")
