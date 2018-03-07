@@ -195,6 +195,36 @@ fixture_dict = {
 }
 
 
+player_game_dict = {
+    'player_id': [],
+    'fixture_id': [],
+    'season_id': [],
+    'club_id': [],
+    'position': [],
+    'minutes_played': [],
+    'goals_scored': [],
+    'goals_conceded': [],
+    'assists': [],
+    'shots_on_goal': [],
+    'shots_total': [],
+    'fouls_committed': [],
+    'fouls_drawn': [],
+    'interceptions': [],
+    'saves': [],
+    'clearances': [],
+    'tackles': [],
+    'offsides': [],
+    'blocks': [],
+    'pen_saved': [],
+    'pen_missed': [],
+    'pen_scored': [],
+    'passes_total': [],
+    'passes_accuracy': [],
+    'crosses_total': [],
+    'crosses_accuracy': []
+}
+
+
 ##### Parsing Methods
 def add_country_to_dictionary(id, name, continent):
     global countries, country_dict
@@ -425,7 +455,29 @@ def parse_fixture_lineup_data(season_id, data):
             other = stats['other']
 
             minutes_played = other['minutes_played']
-            print()
+            goals_scored = goals['scored']
+            goals_conceded = goals['conceded']
+            assists = other['assists']
+            shots_on_goal = shots['shots_on_goal']
+            shots_total = shots['shots_total']
+            fouls_committed = fouls['committed']
+            fouls_drawn = fouls['drawn']
+            interceptions = other['interceptions']
+            saves = other['saves']
+            clearances = other['clearances']
+            tackles = other['tackles']
+            offsides = other['offsides']
+            blocks = other['blocks']
+            yellow_cards = cards['yellowcards']
+            red_cards = cards['redcards']
+            pen_saved = other['pen_saved']
+            pen_missed = other['pen_missed']
+            pen_scored = other['pen_scored']
+            passes_total = passing['passes']
+            passes_accuracy = passing['passes_accuracy']
+            crosses_total = passing['total_crosses']
+            crosses_accuracy = passing['crosses_accuracy']
+
 
 
 def parse_fixture_data(data):

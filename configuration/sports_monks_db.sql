@@ -192,6 +192,9 @@ CREATE TABLE PlayerGame (
   offsides         INTEGER,
   blocks           INTEGER,
 
+  yellow_cards     INTEGER,
+  red_cards        INTEGER,
+
   pen_saved        INTEGER,
   pen_missed       INTEGER,
   pen_scored       INTEGER,
