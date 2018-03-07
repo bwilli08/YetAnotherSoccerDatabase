@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
+import time
+import datetime
 import pandas
 import requests
 import sys
@@ -35,13 +37,15 @@ def convert_sql_result_to_set(statement, fun):
 # Global State of Database Tables (Only PKs)
 countries = convert_sql_result_to_list("SELECT id FROM Country", (lambda x: x[0]))
 venues = convert_sql_result_to_list("SELECT id FROM Venue", (lambda x: x[0]))
+positions = convert_sql_result_to_list("SELECT id FROM Position", (lambda x: x[0]))
 competitions = convert_sql_result_to_list("SELECT id FROM Competition", (lambda x: x[0]))
 invalid_seasons = convert_sql_result_to_list("SELECT id FROM Season WHERE league_id=0", (lambda x: x[0]))
 seasons = convert_sql_result_to_list("SELECT id, finished_backfill FROM Season WHERE league_id!=0",
                                      (lambda x: (x[0], x[1])))
 clubs = convert_sql_result_to_list("SELECT id FROM Club", (lambda x: x[0]))
-club_seasons = convert_sql_result_to_list("SELECT season_id, club_id FROM ClubSeason", (lambda x: (x[0], x[1])))
-
+club_seasons = convert_sql_result_to_list("SELECT season_id, club_id, finished_backfill FROM ClubSeason", (lambda x: ((x[0], x[1]), x[2])))
+players = convert_sql_result_to_list("SELECT id FROM Player", (lambda x: x[0]))
+player_seasons = convert_sql_result_to_list("SELECT player_id, season_id, club_id FROM PlayerSeason", (lambda x: (x[0], x[1], x[2])))
 
 ##### Helper Functions
 def merge_dicts(x, y):
@@ -59,6 +63,7 @@ def sports_monks_api(api_string, additional_params):
     endpoint = base_url + api_string
     params = merge_dicts(token_param, additional_params)
     print((endpoint, params))
+    time.sleep(2.4)
     return requests.get(endpoint, headers=headers, params=params).json()
 
 
@@ -111,6 +116,11 @@ venue_dict = {
     'capacity': []
 }
 
+position_dict = {
+    'id': [],
+    'name': []
+}
+
 competition_dict = {
     'id': [],
     'is_cup': [],
@@ -137,6 +147,35 @@ club_dict = {
 club_season_dict = {
     'season_id': [],
     'club_id': [],
+    'finished_backfill': []
+}
+
+
+player_dict = {
+    'id': [],
+    'nationality': [],
+    'position_id': [],
+    'name': [],
+    'nickname': [],
+    'birthdate': [],
+    'height': [],
+    'weight': []
+}
+
+player_season_dict = {
+    'player_id': [],
+    'season_id': [],
+    'club_id': [],
+    'position_id': [],
+    'roster_number': [],
+    'minutes_played': [],
+    'appearances': [],
+    'sub_apps': [],
+    'goals': [],
+    'assists': [],
+    'yellow_cards': [],
+    'yellow_red': [],
+    'red_cards': [],
 }
 
 
@@ -187,6 +226,18 @@ def parse_venue_data(data):
     capacity = data['capacity']
 
     add_venue_to_dictionary(id, name, city, capacity)
+
+
+def parse_position_data(data):
+    global position_dict, positions
+
+    id = data['id']
+    name = data['name']
+
+    if id not in positions:
+        position_dict['id'].append(id)
+        position_dict['name'].append(name)
+        positions.append(id)
 
 
 def parse_competition_data(data):
@@ -261,11 +312,81 @@ def parse_club_season_data(season_id, data):
     if valid_club:
         club_id = data['id']
 
-        if (season_id, club_id) not in club_seasons:
+        if (season_id, club_id) not in dict(club_seasons):
             club_season_dict['season_id'].append(season_id)
             club_season_dict['club_id'].append(club_id)
+            club_season_dict['finished_backfill'].append(False)
 
-            club_seasons.append((season_id, club_id))
+            club_seasons.append(((season_id, club_id), False))
+
+
+def optional_attr(data, key, default):
+    if key in data and data[key]:
+        return data[key]
+    return default
+
+
+def parse_player_data(data):
+    global player_dict, players
+
+    id = data['player_id']
+
+    if id not in players:
+        player_dict['id'].append(id)
+        player_dict['nationality'].append(optional_attr(data, 'nationality', "Invalid"))
+        player_dict['position_id'].append(optional_attr(data, 'position_id', 0))
+        player_dict['name'].append(optional_attr(data, 'fullname', "Unknown"))
+        player_dict['nickname'].append(optional_attr(data, 'common_name', "Unknown"))
+        birthdate = optional_attr(data, 'birthdate', "01/01/1700")
+        try:
+            birthdate = datetime.datetime.strptime(birthdate, '%d/%m/%Y').strftime('%Y-%m-%d')
+        except ValueError:
+            birthdate = datetime.datetime.strptime(birthdate, '%m/%d/%Y').strftime('%Y-%m-%d')
+        player_dict['birthdate'].append(birthdate)
+
+        height = optional_attr(data, 'height', "0").split(" ")[0]
+        if height.strip():
+            player_dict['height'].append(int(height))
+        else:
+            player_dict['height'].append(0)
+
+        weight = optional_attr(data, 'weight', "0").split(" ")[0]
+        if weight.strip():
+            player_dict['weight'].append(int(weight))
+        else:
+            player_dict['weight'].append(0)
+
+        players.append(id)
+
+
+def parse_lineup_data(season_id, club_id, data):
+    global player_season_dict, player_seasons
+
+    player_id = data['player_id']
+    add_player(player_id)
+
+    position_id = 0
+    if 'position_id' in data:
+        position_id = data['position_id']
+        if 'position' in data and 'data' in data['position']:
+            parse_position_data(data['position']['data'])
+
+    if (player_id, season_id, club_id) not in player_seasons:
+        player_season_dict['player_id'].append(player_id)
+        player_season_dict['season_id'].append(season_id)
+        player_season_dict['club_id'].append(club_id)
+        player_season_dict['position_id'].append(position_id)
+        player_season_dict['roster_number'].append(data['number'])
+        player_season_dict['minutes_played'].append(data['minutes'])
+        player_season_dict['appearances'].append(data['appearences'])
+        player_season_dict['sub_apps'].append(data['substitute_in'])
+        player_season_dict['goals'].append(data['goals'])
+        player_season_dict['assists'].append(data['assists'])
+        player_season_dict['yellow_cards'].append(data['yellowcards'])
+        player_season_dict['yellow_red'].append(data['yellowred'])
+        player_season_dict['red_cards'].append(data['redcards'])
+
+        player_seasons.append((player_id, season_id, club_id))
 
 
 ##### Workflow methods
@@ -362,18 +483,37 @@ def populate_club_seasons():
 
 
 def add_player(player_id):
-    print()
+    global players
+
+    if player_id not in players:
+        resp = sports_monks_api("/players/{}".format(player_id), {'include': 'position'})
+        parse_player_data(resp['data'])
 
 
-def add_player_game(game_json, started):
-    print()
+def populate_lineups():
+    global club_seasons, position_dict, player_dict, player_season_dict
 
+    for ((season_id, club_id), finished_backfill) in club_seasons:
+        if not finished_backfill:
+            paginated_request("/squad/season/{}/team/{}".format(season_id, club_id), {'include': 'position'}, (lambda x: parse_lineup_data(season_id, club_id, x)))
+            paginated_request("/squad/season/{}/team/{}".format(season_id, club_id), {'include': 'position'}, (lambda x: parse_lineup_data(season_id, club_id, x)))
 
-def populate_fixtures():
-    print()
+            # Add positions
+            dataframe_insert(position_dict, "Position")
+
+            # Add Players
+            dataframe_insert(player_dict, "Player")
+
+            # Add Player Season
+            dataframe_insert(player_season_dict, "PlayerSeason")
+
+            club_seasons.remove(((season_id, club_id), finished_backfill))
+            club_seasons.append(((season_id, club_id), True))
+            engine.execute("UPDATE ClubSeason SET finished_backfill=true WHERE season_id='{}' AND club_id='{}'".format(season_id, club_id))
+
 
 # populate_countries()
 # populate_competitions()
 # populate_seasons()
 # populate_club_seasons()
-# populate_lineups()
+populate_lineups()
