@@ -145,7 +145,7 @@ CREATE TABLE PlayerSeason (
   FOREIGN KEY (position_id) REFERENCES Position (id)
 );
 
-# Fixture API - Pass in the specific competition that I care about
+# Fixture API - For each team from 1990-01-01 to now.
 CREATE TABLE Fixture (
   id              INTEGER PRIMARY KEY,
   season_id       INTEGER,

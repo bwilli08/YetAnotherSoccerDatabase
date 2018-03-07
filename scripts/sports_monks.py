@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
 
-import time
 import datetime
 import pandas
 import requests
 import sys
+import time
 from sqlalchemy import create_engine
 
 sys.path.insert(0, '../internal')
@@ -43,9 +43,12 @@ invalid_seasons = convert_sql_result_to_list("SELECT id FROM Season WHERE league
 seasons = convert_sql_result_to_list("SELECT id, finished_backfill FROM Season WHERE league_id!=0",
                                      (lambda x: (x[0], x[1])))
 clubs = convert_sql_result_to_list("SELECT id FROM Club", (lambda x: x[0]))
-club_seasons = convert_sql_result_to_list("SELECT season_id, club_id, finished_backfill FROM ClubSeason", (lambda x: ((x[0], x[1]), x[2])))
+club_seasons = convert_sql_result_to_list("SELECT season_id, club_id, finished_backfill FROM ClubSeason",
+                                          (lambda x: ((x[0], x[1]), x[2])))
 players = convert_sql_result_to_list("SELECT id FROM Player", (lambda x: x[0]))
-player_seasons = convert_sql_result_to_list("SELECT player_id, season_id, club_id FROM PlayerSeason", (lambda x: (x[0], x[1], x[2])))
+player_seasons = convert_sql_result_to_list("SELECT player_id, season_id, club_id FROM PlayerSeason",
+                                            (lambda x: (x[0], x[1], x[2])))
+
 
 ##### Helper Functions
 def merge_dicts(x, y):
@@ -149,7 +152,6 @@ club_season_dict = {
     'club_id': [],
     'finished_backfill': []
 }
-
 
 player_dict = {
     'id': [],
@@ -495,8 +497,8 @@ def populate_lineups():
 
     for ((season_id, club_id), finished_backfill) in club_seasons:
         if not finished_backfill:
-            paginated_request("/squad/season/{}/team/{}".format(season_id, club_id), {'include': 'position'}, (lambda x: parse_lineup_data(season_id, club_id, x)))
-            paginated_request("/squad/season/{}/team/{}".format(season_id, club_id), {'include': 'position'}, (lambda x: parse_lineup_data(season_id, club_id, x)))
+            paginated_request("/squad/season/{}/team/{}".format(season_id, club_id), {'include': 'position'},
+                              (lambda x: parse_lineup_data(season_id, club_id, x)))
 
             # Add positions
             dataframe_insert(position_dict, "Position")
@@ -509,7 +511,9 @@ def populate_lineups():
 
             club_seasons.remove(((season_id, club_id), finished_backfill))
             club_seasons.append(((season_id, club_id), True))
-            engine.execute("UPDATE ClubSeason SET finished_backfill=true WHERE season_id='{}' AND club_id='{}'".format(season_id, club_id))
+            engine.execute(
+                "UPDATE ClubSeason SET finished_backfill=true WHERE season_id='{}' AND club_id='{}'".format(season_id,
+                                                                                                            club_id))
 
 
 # populate_countries()
