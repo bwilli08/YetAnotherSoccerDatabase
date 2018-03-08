@@ -88,8 +88,11 @@ class Clubs extends Component {
         const clubRows = clubs.map((club, idx) => (
             <tr key={idx}>
                 <td className="right aligned">{club.club_name}</td>
-                <td className="right aligned">{club.country}</td>
-                <td className="right aligned">{club.stadium}</td>
+                <td className="right aligned">{club.country_name}</td>
+                <td className="right aligned">{club.continent}</td>
+                <td className="right aligned">{club.venue_city}</td>
+                <td className="right aligned">{club.venue_name}</td>
+                <td className="right aligned">{club.venue_capacity}</td>
                 <td>
                     <Button onClick={() => this.getClubStats(club)}>View</Button>
                 </td>
@@ -137,7 +140,10 @@ class Clubs extends Component {
                                 <tr>
                                     <th>Club</th>
                                     <th>Country</th>
+                                    <th>Continent</th>
+                                    <th>City</th>
                                     <th>Stadium</th>
+                                    <th>Capacity</th>
                                     <th>About</th>
                                 </tr>
                                 </thead>
