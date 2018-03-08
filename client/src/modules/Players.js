@@ -103,25 +103,6 @@ class Players extends Component {
         });
     };
 
-    populateRows = (stat, idx) => {
-            return (
-                <tr key={idx}>
-                    <td className="right aligned">{stat.club_name}</td>
-                    <td className="right aligned">{stat.comp_name}</td>
-                    <td className="right aligned">{stat.year}</td>
-                    <td className="right aligned">{stat.most_used_position}</td>
-                    <td className="right aligned">{stat.games_played}</td>
-                    <td className="right aligned">{stat.minutes_played}</td>
-                    <td className="right aligned">{stat.goals}</td>
-                    <td className="right aligned">{stat.assists}</td>
-                    <td className="right aligned">{stat.yellow_cards}</td>
-                    <td className="right aligned">{stat.red_cards}</td>
-                    <td className="right aligned">{stat.goals_conceded}</td>
-                    <td className="right aligned">{stat.saves}</td>
-                </tr>
-            )
-    };
-
     toggleDropDown() {
         this.setState({
             dropdownOpen: !this.state.dropdownOpen
@@ -140,19 +121,36 @@ class Players extends Component {
 
         const playerRows = players.map((player, idx) => (
             <tr key={idx}>
-                <td className="right aligned">{player.name}</td>
-                <td className="right aligned">{player.nationality}</td>
-                <td className="right aligned">{player.dob}</td>
-                <td className="right aligned">{player.height}</td>
-                <td className="right aligned">{player.foot}</td>
+                <td className="right aligned">{player.player_name}</td>
+                <td className="right aligned">{player.player_nickname}</td>
+                <td className="right aligned">{player.player_nationality}</td>
                 <td className="right aligned">{player.position}</td>
+                <td className="right aligned">{player.player_birthdate}</td>
+                <td className="right aligned">{player.player_height}</td>
+                <td className="right aligned">{player.player_weight}</td>
                 <td>
                     <Button onClick={() => this.getPlayerStats(player)}>View Stats</Button>
                 </td>
             </tr>
         ));
 
-        const statRows = stats.map((stat, idx) => this.populateRows(stat, idx));
+        const statRows = stats.map((stat, idx) => (
+            <tr key={idx}>
+                <td className="right aligned">{stat.comp_name}</td>
+                <td className="right aligned">{stat.year}</td>
+                <td className="right aligned">{stat.country_name}</td>
+                <td className="right aligned">{stat.club_name}</td>
+                <td className="right aligned">{stat.apps}</td>
+                <td className="right aligned">{stat.starts}</td>
+                <td className="right aligned">{stat.subs}</td>
+                <td className="right aligned">{stat.minutes}</td>
+                <td className="right aligned">{stat.goals}</td>
+                <td className="right aligned">{stat.assists}</td>
+                <td className="right aligned">{stat.yellows}</td>
+                <td className="right aligned">{stat.double_yellows}</td>
+                <td className="right aligned">{stat.reds}</td>
+            </tr>
+        ));
         const showNoResultMessage = playerRows.length === 0 && this.state.displayPlayers && !this.state.isPlayerSearching;
         const showSearchTable = this.state.displayPlayers && !showNoResultMessage;
 
@@ -171,10 +169,12 @@ class Players extends Component {
                                 <DropdownMenu>
                                     <DropdownItem onClick={this.selectPosition}
                                                   value={DEFAULT_POSITION}>{DEFAULT_POSITION}</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition} value="GK">Goalkeeper</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition} value="DF">Defender</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition} value="MF">Midfielder</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition} value="FW">Forward</DropdownItem>
+                                    <DropdownItem onClick={this.selectPosition}
+                                                  value="Goalkeeper">Goalkeeper</DropdownItem>
+                                    <DropdownItem onClick={this.selectPosition} value="Defender">Defender</DropdownItem>
+                                    <DropdownItem onClick={this.selectPosition}
+                                                  value="Midfielder">Midfielder</DropdownItem>
+                                    <DropdownItem onClick={this.selectPosition} value="Attacker">Attacker</DropdownItem>
                                 </DropdownMenu>
                             </InputGroupButtonDropdown>
                             <Button onClick={this.handleSearch}>Search</Button>
@@ -193,12 +193,13 @@ class Players extends Component {
                             <Table>
                                 <thead>
                                 <tr>
-                                    <th>Name</th>
+                                    <th>Full Name</th>
+                                    <th>Short Name</th>
                                     <th>Nationality</th>
-                                    <th>DOB</th>
-                                    <th>Height</th>
-                                    <th>Pref. Foot</th>
                                     <th>Position</th>
+                                    <th>Birthdate</th>
+                                    <th>Height (cm)</th>
+                                    <th>Weight (kg)</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -207,23 +208,24 @@ class Players extends Component {
                             </Table>
                         </ToggleDisplay>
                         <ToggleDisplay show={this.state.displayStats}>
-                            <h4>Game Statistics</h4>
+                            <h4>Season Statistics</h4>
                             <Table>
                                 <thead>
-                                    <tr>
-                                        <th>Club</th>
-                                        <th>Comp</th>
-                                        <th>Season</th>
-                                        <th>Position</th>
-                                        <th>Apps</th>
-                                        <th>Minutes</th>
-                                        <th>Goals</th>
-                                        <th>Assists</th>
-                                        <th>YC</th>
-                                        <th>RC</th>
-                                        <th>Goals Conceded</th>
-                                        <th>Saves</th>
-                                    </tr>
+                                <tr>
+                                    <th>Comp</th>
+                                    <th>Season</th>
+                                    <th>Country</th>
+                                    <th>Club</th>
+                                    <th>Apps</th>
+                                    <th>Starts</th>
+                                    <th>Subs</th>
+                                    <th>Minutes</th>
+                                    <th>Goals</th>
+                                    <th>Assists</th>
+                                    <th>Yellow</th>
+                                    <th>Double Yellow</th>
+                                    <th>Red</th>
+                                </tr>
                                 </thead>
                                 <tbody>
                                 {statRows}
