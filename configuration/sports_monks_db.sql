@@ -171,7 +171,7 @@ CREATE TABLE PlayerGame (
   fixture_id       INTEGER,
   season_id        INTEGER,
   club_id          INTEGER,
-  position         VARCHAR(2),
+  position         VARCHAR(8),
 
   minutes_played   INTEGER,
 
