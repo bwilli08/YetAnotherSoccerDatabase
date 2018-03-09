@@ -134,23 +134,29 @@ class Players extends Component {
             </tr>
         ));
 
-        const statRows = stats.map((stat, idx) => (
-            <tr key={idx}>
-                <td className="right aligned">{stat.comp_name}</td>
-                <td className="right aligned">{stat.year}</td>
-                <td className="right aligned">{stat.country_name}</td>
-                <td className="right aligned">{stat.club_name}</td>
-                <td className="right aligned">{stat.apps}</td>
-                <td className="right aligned">{stat.starts}</td>
-                <td className="right aligned">{stat.subs}</td>
-                <td className="right aligned">{stat.minutes}</td>
-                <td className="right aligned">{stat.goals}</td>
-                <td className="right aligned">{stat.assists}</td>
-                <td className="right aligned">{stat.yellows}</td>
-                <td className="right aligned">{stat.double_yellows}</td>
-                <td className="right aligned">{stat.reds}</td>
-            </tr>
-        ));
+        const statRows = stats.map((stat, idx) => {
+            var minutes = stat.minutes;
+            if (stat.apps > 0 && minutes === 0) {
+                minutes = "N/A";
+            }
+            return (
+                <tr key={idx}>
+                    <td className="right aligned">{stat.comp_name}</td>
+                    <td className="right aligned">{stat.year}</td>
+                    <td className="right aligned">{stat.country_name}</td>
+                    <td className="right aligned">{stat.club_name}</td>
+                    <td className="right aligned">{stat.apps}</td>
+                    <td className="right aligned">{stat.starts}</td>
+                    <td className="right aligned">{stat.subs}</td>
+                    <td className="right aligned">{minutes}</td>
+                    <td className="right aligned">{stat.goals}</td>
+                    <td className="right aligned">{stat.assists}</td>
+                    <td className="right aligned">{stat.yellows}</td>
+                    <td className="right aligned">{stat.double_yellows}</td>
+                    <td className="right aligned">{stat.reds}</td>
+                </tr>
+            )
+        });
         const showNoResultMessage = playerRows.length === 0 && this.state.displayPlayers && !this.state.isPlayerSearching;
         const showSearchTable = this.state.displayPlayers && !showNoResultMessage;
 

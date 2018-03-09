@@ -54,6 +54,7 @@ CREATE TABLE Club (
   country_id       INTEGER,
   is_national_team BOOLEAN,
   venue_id         INTEGER,
+  finished_fixture_backfill BOOLEAN,
 
   FOREIGN KEY (country_id) REFERENCES Country (id),
   FOREIGN KEY (venue_id) REFERENCES Venue (id)
@@ -64,7 +65,6 @@ CREATE TABLE ClubSeason (
   season_id INTEGER,
   club_id   INTEGER,
   finished_lineup_backfill BOOLEAN,
-  finished_fixture_backfill BOOLEAN,
 
   PRIMARY KEY (season_id, club_id),
   FOREIGN KEY (season_id) REFERENCES Season (id),

@@ -142,9 +142,9 @@ app.get("/search/players", (req, res) => {
     const name_string = name.replace(" ", "%");
 
     var select_player_qry = `SELECT * FROM Player WHERE name LIKE '%${name_string}%'`;
-
+    var select_position_qry = `SELECT * FROM Position`;
     if (position) {
-        select_player_qry = select_player_qry.concat(` AND position='${position}'`);
+        select_position_qry = select_position_qry.concat(` WHERE name = '${position}'`);
     }
 
     const qry =
@@ -160,7 +160,7 @@ app.get("/search/players", (req, res) => {
         FROM
             (${select_player_qry}) player
                 JOIN
-            Position position ON player.position_id = position.id
+            (${select_position_qry}) position ON player.position_id = position.id
         ORDER BY player.name ASC`;
 
     db.query(qry, function (err, result) {
