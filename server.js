@@ -32,14 +32,16 @@ app.get("/search/club-season", (req, res) => {
     }
 
     const qry =
-        `SELECT *
+        `SELECT
+          *
         FROM
-            ClubSeason
-                LEFT JOIN
-            (SELECT club_id, club_name, country as club_country FROM Club) club USING (club_id)
-                JOIN
-            (SELECT comp_id, comp_name, year, country as comp_country FROM Competition) comp USING (comp_id)
-        WHERE club_id=${club_id}
+          (SELECT *
+           FROM ClubSeasonStats
+           WHERE club_id = ${club_id}) clubSeason
+          LEFT JOIN
+          Season season ON clubSeason.season_id = season.id
+          JOIN
+          Competition comp ON season.league_id = comp.id
         ORDER BY year DESC`;
 
     db.query(qry, function (err, result) {
@@ -84,7 +86,7 @@ app.get("/search/player-season", (req, res) => {
             Country country ON competition.country_id = country.id
                 JOIN
             Club club ON stats.club_id = club.id
-        ORDER BY season.year ASC;`;
+        ORDER BY season.year DESC`;
 
     db.query(qry, function (err, result) {
         if (err) throw err;

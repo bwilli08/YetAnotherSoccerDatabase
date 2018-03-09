@@ -19,9 +19,9 @@ class Clubs extends Component {
             clubs: [],
             isClubSearching: false,
 
-            displayStats: false,
-            isStatsSearching: false,
-            stats: []
+            displaySeasons: false,
+            isSeasonsSearching: false,
+            seasons: []
         };
     }
 
@@ -44,7 +44,7 @@ class Clubs extends Component {
                 displayClubs: true,
                 clubs: [],
                 isClubSearching: true,
-                displayStats: false
+                displaySeasons: false
             });
 
             Client.club_search(club_name, clubs => {
@@ -67,23 +67,23 @@ class Clubs extends Component {
         }
     };
 
-    getClubStats = (club) => {
+    getSeasons = (club) => {
         this.setState({
-            displayStats: true,
-            isStatsSearching: true,
+            displaySeasons: true,
+            isSeasonsSearching: true,
             clubs: [club]
         });
 
-        Client.club_stats(club.club_id, stats => {
+        Client.club_seasons(club.club_id, seasons => {
             this.setState({
-                stats: stats,
-                isStatsSearching: false
+                seasons: seasons,
+                isSeasonsSearching: false
             });
         });
     };
 
     render() {
-        const {stats, clubs} = this.state;
+        const {clubs, seasons} = this.state;
 
         const clubRows = clubs.map((club, idx) => (
             <tr key={idx}>
@@ -94,22 +94,20 @@ class Clubs extends Component {
                 <td className="right aligned">{club.venue_name}</td>
                 <td className="right aligned">{club.venue_capacity}</td>
                 <td>
-                    <Button onClick={() => this.getClubStats(club)}>View</Button>
+                    <Button onClick={() => this.getSeasons(club)}>View</Button>
                 </td>
             </tr>
         ));
 
-        const statRows = stats.map((stat, idx) => (
+        const seasonRows = seasons.map((season, idx) => (
             <tr>
-                <td>{stat.year}</td>
-                <td>{stat.comp_name}</td>
-                <td>{stat.final_place}</td>
-                <td>{stat.points}</td>
-                <td>{stat.wins}</td>
-                <td>{stat.draws}</td>
-                <td>{stat.losses}</td>
-                <td>{stat.goals_scored}</td>
-                <td>{stat.goals_against}</td>
+                <td>{season.name}</td>
+                <td>{season.year}</td>
+                <td>{season.win_total}-{season.draw_total}-{season.lost_total}</td>
+                <td>{season.goals_for_total}-{season.goals_against_total}</td>
+                <td>
+                    <Button onClick={() => this.showSeasonStats(seasons)}>View Stats</Button>
+                </td>
             </tr>
         ));
 
@@ -152,24 +150,20 @@ class Clubs extends Component {
                                 </tbody>
                             </Table>
                         </ToggleDisplay>
-                        <ToggleDisplay show={this.state.displayStats}>
-                            <h4>Season Statistics</h4>
+                        <ToggleDisplay show={this.state.displaySeasons}>
+                            <h4>Seasons</h4>
                             <Table>
                                 <thead>
                                 <tr>
-                                    <th>Season</th>
                                     <th>Competition</th>
-                                    <th>Final Position</th>
-                                    <th>Points</th>
-                                    <th>Wins</th>
-                                    <th>Draws</th>
-                                    <th>Losses</th>
-                                    <th>Goals For</th>
-                                    <th>Goals Against</th>
+                                    <th>Season</th>
+                                    <th>Record (W-D-L)</th>
+                                    <th>Goals (For-Against)</th>
+                                    <th>More</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {statRows}
+                                {seasonRows}
                                 </tbody>
                             </Table>
                         </ToggleDisplay>

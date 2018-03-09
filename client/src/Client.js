@@ -8,7 +8,7 @@ function club_search(query, cb) {
         .then(cb);
 }
 
-function club_stats(query, cb) {
+function club_seasons(query, cb) {
     return fetch(`/search/club-season?club_id=${query}`, {
         accept: "application/json"
     })
@@ -56,5 +56,5 @@ function parseJSON(response) {
     return response.json();
 }
 
-const Client = {club_search, club_stats, player_search, stat_search};
+const Client = {club_search, club_seasons, player_search, stat_search};
 export default Client;
