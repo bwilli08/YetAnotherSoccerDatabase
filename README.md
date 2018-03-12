@@ -2,8 +2,8 @@
 
 ## To-Do List
 * Matches Page
-  * Lineups for a match
-  * Be able to search by a team or a specific match-up (i.e. Manchester United vs. Liverpool)
+    * Lineups for a match
+    * Be able to search by a team or a specific match-up (i.e. Manchester United vs. Liverpool)
 * Update this file with the used languages and how to setup the website locally.
 * Write up of week-by-week assignments, what I've done, lessons learned, technologies used, etc.
 
@@ -14,22 +14,22 @@
 
 ### Backfilling Sports Monks Data
 1. Ensure you have pandas, mysqlconnector, and sqlalchemy installed for python3.
-  * If you don't, try the following command: `pip3 install pandas sqlalchemy mysql-connector`
+    * If you don't, try the following command: `pip3 install pandas sqlalchemy mysql-connector`
 1. Run the CREATE TABLE statements found in `configuration/sports_monks_db.sql`.
 1. Create the `internal/` directory and the following files. DO NOT COMMIT ANYTHING IN THIS FOLDER.
-  1. Create a file named `sports_monks_tok.py`. It should contain a single method, `sports_monks_token()`, that returns the API token you've created with Sports Monks.
-  1. Create a file named `databaseinfo.py`. It should contain the following methods:
-    * `db_user()`: Return the DB user name
-    * `db_passwd()`: Return the DB password
-    * `db_host()`: Return the host that the DB is running on
-    * `db_name()`: Return tahe name of the database, probably "SportsMonksDB".
+    1. Create a file named `sports_monks_tok.py`. It should contain a single method, `sports_monks_token()`, that returns the API token you've created with Sports Monks.
+    1. Create a file named `databaseinfo.py`. It should contain the following methods:
+        * `db_user()`: Return the DB user name
+        * `db_passwd()`: Return the DB password
+        * `db_host()`: Return the host that the DB is running on
+        * `db_name()`: Return tahe name of the database, probably "SportsMonksDB".
 1. Run `scripts/sports_monks.py`, then run `scripts/populate_club_season_stats.sql`.
-   * This will take approximately a day, as Sports Monks limits their accounts to 1500 requests/hour.
+    * This will take approximately a day, as Sports Monks limits their accounts to 1500 requests/hour.
 
 ### Start the Backend Server
 1. Install dependencies: `npm install`
 1. Create a file in the `internal/` folder named `database-info.js`.
-  * This should contain the same methods as the above `databaseinfo.py` file, but in Express.js syntax.
+    * This should contain the same methods as the above `databaseinfo.py` file, but in Express.js syntax.
 1. Start the server: `npm run server`
 
 ### Start the Frontend Web Application
