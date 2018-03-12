@@ -21,7 +21,7 @@ Or both: `npm start`
 **TODO:** Explain what each library/language is used for.
 
 ### Data Source
-The backing data source is a Soccer API called (Sports Monks)[https://www.sportmonks.com]. They have country, competition, club, and player information from 1992 onward. Their dataset also includes scores from fixtures during that period, but only has in-depth fixture statistics (shots-on-target, passing, etc.) for the past two seasons. Because of this difference in available data, I've only retrieved fixture information for the 2016-17 and 2017-18 seasons.
+The backing data source is a Soccer API called [Sports Monks](https://www.sportmonks.com). They have country, competition, club, and player information from 1992 onward. Their dataset also includes scores from fixtures during that period, but only has in-depth fixture statistics (shots-on-target, passing, etc.) for the past two seasons. Because of this difference in available data, I've only retrieved fixture information for the 2016-17 and 2017-18 seasons.
 
 The ETL process was implemented in Python, and can be viewed under `scripts/sports_monks.py`.
 
@@ -44,9 +44,9 @@ The Relation Schema, modelled as the MySQL create table statements, can be viewe
 ## Deprecated Scripts/Files
 I previously attempted to retrieve information from two other websites before I moved to the Sports Monks API. The ETL scripts and relational schema files can be seen in the `deprecated/` folder, which has been kept for historical longevity, even though the scripts and .sql files are unused.
 
-### (FBRef.com)[https://fbref.com] (`deprecated/fbref`)
+### [FBRef.com](https://fbref.com) (`deprecated/fbref`)
 The Sports-Reference website is in the process of creating a website for soccer statistics. However, at the time of writing, their website is only partially developed and is not guaranteed to be accurate. Unfortunately, I learned that their data was inaccurate after having already created and fully run the script used to scrape data from their website.
 
-### (Football Lineups)[www.football-lineups.com] (`deprecated/football-lineups`)
+### [Football Lineups](www.football-lineups.com) (`deprecated/football-lineups`)
 
 
