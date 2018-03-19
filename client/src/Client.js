@@ -14,6 +14,15 @@ function club_search_with_name(club, cb) {
         .then(cb);
 }
 
+function get_readme(cb) {
+    return fetch("/readme", {
+        accept: "text/plain"
+    })
+        .then(checkStatus)
+        .then(parseText)
+        .then(cb);
+}
+
 function club_match_stats(match_id, cb) {
     return fetch(`/get/match-stats?match_id=${match_id}`, {
         accept: "application/json"
@@ -95,5 +104,9 @@ function parseJSON(response) {
     return response.json();
 }
 
-const Client = {match_lineup, club_search, club_match_stats, club_seasons, club_match_search, player_search, stat_search, club_search_with_name};
+function parseText(response) {
+    return response.text();
+}
+
+const Client = {get_readme, match_lineup, club_search, club_match_stats, club_seasons, club_match_search, player_search, stat_search, club_search_with_name};
 export default Client;

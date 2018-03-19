@@ -106,7 +106,7 @@ class Clubs extends Component {
                 <td>{season.win_total}-{season.draw_total}-{season.lost_total}</td>
                 <td>{season.goals_for_total}-{season.goals_against_total}</td>
                 <td>
-                    <Button onClick={() => this.showSeasonStats(seasons)}>View Stats</Button>
+                    TODO
                 </td>
             </tr>
         ));

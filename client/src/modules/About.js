@@ -1,15 +1,31 @@
 import React, {Component} from "react";
-import {withRouter} from "react-router-dom";
+import {Container} from "reactstrap";
+import Client from "../Client";
+import ReactMarkdown from "react-markdown";
 
-class About extends Component {
+export default class About extends Component {
+
+    constructor() {
+        super();
+
+        this.state = {
+            markdown: ""
+        };
+    }
+
+    componentDidMount() {
+        Client.get_readme(res => {
+            this.setState({
+                markdown: <ReactMarkdown source={res}/>
+            });
+        });
+    }
+
     render() {
         return (
-            <div>
-                <h1>About</h1>
-                This is the about section.
-            </div>
+            <Container>
+                {this.state.markdown}
+            </Container>
         );
     }
 }
-
-export default withRouter(About);
