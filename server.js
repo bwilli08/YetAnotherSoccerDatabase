@@ -172,6 +172,70 @@ app.get("/search/players", (req, res) => {
     });
 });
 
+app.get("/search/matches", (req, res) => {
+    const type = req.query.type;
+
+    if (!type) {
+        res.json({
+            error: "Missing required parameter `type`, should be either 'club' or 'player'."
+        });
+        return;
+    }
+
+    if (type === "club") {
+        const club1 = req.query.club1;
+        const club2 = req.query.club2;
+
+        if (!club1) {
+            res.json({
+                error: "You have to specify at least one team."
+            });
+            return;
+        }
+
+        var qry = `SELECT team1.* FROM (SELECT * FROM Fixture WHERE home_team_id = ${club1} OR away_team_id = ${club1}) team1`;
+
+        if (club2) {
+            qry = qry.concat(`, (SELECT * FROM Fixture WHERE home_team_id = ${club2} OR away_team_id = ${club2}) team2 WHERE team1.id = team2.id`);
+        }
+
+        db.query(qry, function (err, result) {
+            if (err) throw err;
+
+            res.json(result);
+        });
+
+    } else if (type === "player") {
+        const player_id = req.query.player_id;
+
+        if (!player_id) {
+            res.json({
+                error: "You have to specify a player."
+            });
+            return;
+        }
+
+        const qry = `SELECT *
+                            FROM
+                                (SELECT * FROM PlayerGame WHERE player_id = 323) game,
+                                Season s,
+                                Club c,
+                                Competition comp
+                            WHERE s.league_id = comp.id AND game.season_id = s.id AND game.club_id = c.id`;
+
+        db.query(qry, function (err, result) {
+            if (err) throw err;
+
+            res.json(result);
+        });
+    } else {
+        res.json({
+            error: "Invalid parameter `type`, must be either 'club' or 'player'."
+        });
+        return;
+    }
+});
+
 app.listen(app.get("port"), () => {
     console.log(`Find the server at: http://localhost:${app.get("port")}/`); // eslint-disable-line no-console
 });
