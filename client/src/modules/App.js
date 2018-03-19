@@ -20,6 +20,9 @@ class App extends React.Component {
                             <NavLink tag={Link} to="/clubs">Clubs</NavLink>
                         </NavItem>
                         <NavItem>
+                            <NavLink tag={Link} to="/matches">Matches</NavLink>
+                        </NavItem>
+                        <NavItem>
                             <NavLink tag={Link} to="/players">Players</NavLink>
                         </NavItem>
                     </Nav>

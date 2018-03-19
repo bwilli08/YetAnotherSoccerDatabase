@@ -47,7 +47,7 @@ class Clubs extends Component {
                 displaySeasons: false
             });
 
-            Client.club_search(club_name, clubs => {
+            Client.club_search_with_name(club_name, clubs => {
                 this.setState({
                     activeSearchText: club_name,
                     clubs: clubs.slice(0, MATCHING_CLUB_LIMIT),

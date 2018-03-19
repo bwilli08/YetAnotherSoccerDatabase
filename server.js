@@ -11,7 +11,6 @@ const db = mysql.createConnection({
     dateStrings: true
 });
 
-const outfield_positions = ["FW", "MF", "DF"];
 const app = express();
 
 app.set("port", process.env.PORT || 3001);
@@ -98,30 +97,28 @@ app.get("/search/player-season", (req, res) => {
 app.get("/search/clubs", (req, res) => {
     const name = req.query.name;
 
+    var qry;
     if (!name) {
-        res.json({
-            error: "Missing required parameter `name`"
-        });
-        return;
+        qry = "SELECT * FROM Club";
+    } else {
+        qry =
+            `SELECT
+                club.id as club_id,
+                club.name as club_name,
+                country.id as country_id,
+                country.name as country_name,
+                country.continent as continent,
+                venue.name as venue_name,
+                venue.city as venue_city,
+                venue.capacity as venue_capacity
+            FROM
+                (SELECT * FROM Club WHERE name LIKE '%${name}%') club
+                    JOIN
+                Country country ON club.country_id = country.id
+                    JOIN
+                Venue venue ON club.venue_id = venue.id
+            ORDER BY club.name ASC`;
     }
-
-    const qry =
-        `SELECT
-            club.id as club_id,
-            club.name as club_name,
-            country.id as country_id,
-            country.name as country_name,
-            country.continent as continent,
-            venue.name as venue_name,
-            venue.city as venue_city,
-            venue.capacity as venue_capacity
-        FROM
-            (SELECT * FROM Club WHERE name LIKE '%${name}%') club
-                JOIN
-            Country country ON club.country_id = country.id
-                JOIN
-            Venue venue ON club.venue_id = venue.id
-        ORDER BY club.name ASC`;
 
     db.query(qry, function (err, result) {
         if (err) throw err;
@@ -172,6 +169,70 @@ app.get("/search/players", (req, res) => {
     });
 });
 
+app.get("/get/match-stats", (req, res) => {
+    const match_id = req.query.match_id;
+
+    if (!match_id) {
+        res.json({
+            error: "Missing required parameter `match_id`."
+        });
+        return;
+    }
+
+    qry = `
+    SELECT
+        club_id,
+        SUM(goals_scored) as goals,
+        SUM(shots_on_goal) as shots_on_goal,
+        SUM(shots_total) as shots,
+        SUM(fouls_committed) as fouls,
+        SUM(interceptions) as interceptions,
+        SUM(saves) as saves,
+        SUM(clearances) as clearances,
+        SUM(tackles) as tackles,
+        SUM(offsides) as offsides,
+        SUM(blocks) as blocks,
+        SUM(passes_total) as passes,
+        SUM(crosses_total) as crosses,
+        SUM(yellow_cards) as yellow_cards,
+        SUM(red_cards) as red_cards
+    FROM
+        (SELECT * FROM PlayerGame WHERE fixture_id = ${match_id}) lineup,
+        Player p
+    WHERE lineup.player_id = p.id
+    GROUP BY club_id`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
+app.get("/get/lineup", (req, res) => {
+    const match_id = req.query.match_id;
+
+    if (!match_id) {
+        res.json({
+            error: "Missing required parameter `match_id`."
+        });
+        return;
+    }
+
+    const qry = `
+    SELECT *
+    FROM
+        (SELECT * FROM PlayerGame WHERE fixture_id = ${match_id}) lineup,
+        Player p
+    WHERE lineup.player_id = p.id`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
 app.get("/search/matches", (req, res) => {
     const type = req.query.type;
 
@@ -193,11 +254,30 @@ app.get("/search/matches", (req, res) => {
             return;
         }
 
-        var qry = `SELECT team1.* FROM (SELECT * FROM Fixture WHERE home_team_id = ${club1} OR away_team_id = ${club1}) team1`;
+        var qry =
+            `SELECT
+                team1.id as match_id,
+                team1.home_team_id as home_team_id,
+                team1.away_team_id as away_team_id,
+                team1.home_team_score,
+                team1.away_team_score,
+                date(team1.date_of_game) as date_of_game,
+                v.name as venue,
+                s.year,
+                c.name as league
+            FROM (SELECT * FROM Fixture WHERE home_team_id = ${club1} OR away_team_id = ${club1}) team1`;
 
         if (club2) {
-            qry = qry.concat(`, (SELECT * FROM Fixture WHERE home_team_id = ${club2} OR away_team_id = ${club2}) team2 WHERE team1.id = team2.id`);
+            qry = qry.concat(`, (SELECT * FROM Fixture WHERE home_team_id = ${club2} OR away_team_id = ${club2}) team2`);
         }
+
+        qry = qry.concat(", Venue v, Season s, Competition c WHERE team1.venue_id = v.id AND team1.season_id = s.id AND s.league_id = c.id");
+
+        if (club2) {
+            qry = qry.concat(" AND team1.id = team2.id");
+        }
+
+        qry = qry.concat(" ORDER BY date_of_game DESC");
 
         db.query(qry, function (err, result) {
             if (err) throw err;

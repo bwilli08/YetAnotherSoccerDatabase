@@ -4,6 +4,7 @@ import "./stylesheets/index.css";
 import App from "./modules/App";
 import About from "./modules/About";
 import Clubs from "./modules/Clubs";
+import Matches from "./modules/Matches";
 import Players from "./modules/Players";
 import {BrowserRouter, Route} from "react-router-dom";
 import registerServiceWorker from "./registerServiceWorker";
@@ -15,6 +16,7 @@ ReactDOM.render((
             <Route path="/" component={App}/>
             <Route path="/about" component={About}/>
             <Route path="/clubs" component={Clubs}/>
+            <Route path="/matches" component={Matches}/>
             <Route path="/players" component={Players}/>
         </div>
     </BrowserRouter>

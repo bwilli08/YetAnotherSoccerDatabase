@@ -1,6 +1,36 @@
 /* eslint-disable no-undef */
-function club_search(query, cb) {
-    return fetch(`/search/clubs?name=${query}`, {
+function club_search(cb) {
+    return club_search_with_name(null, cb);
+}
+
+function club_search_with_name(club, cb) {
+    const params = club ? `?name=${club}` : "";
+
+    return fetch(`/search/clubs${params}`, {
+        accept: "application/json"
+    })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
+function club_match_stats(match_id, cb) {
+    return fetch(`/get/match-stats?match_id=${match_id}`, {
+        accept: "application/json"
+    })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
+function club_match_search(club1, club2, cb) {
+    const club1param = `&club1=${club1}`;
+    var club2param = "";
+    if (club2) {
+        club2param = `&club2=${club2}`;
+    }
+
+    return fetch(`/search/matches?type=club${club1param}${club2param}`, {
         accept: "application/json"
     })
         .then(checkStatus)
@@ -56,5 +86,5 @@ function parseJSON(response) {
     return response.json();
 }
 
-const Client = {club_search, club_seasons, player_search, stat_search};
+const Client = {club_search, club_match_stats, club_seasons, club_match_search, player_search, stat_search, club_search_with_name};
 export default Client;
