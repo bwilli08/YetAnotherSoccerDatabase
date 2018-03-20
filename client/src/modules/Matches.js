@@ -1,23 +1,13 @@
 import React, {Component} from "react";
 import {Button, Table, Container, Row, Col, Modal, ModalBody, ModalHeader, ModalFooter} from "reactstrap";
+import {clubs, find_club_by_id} from "../util/ClubFunctions";
+import MatchStats from "./MatchStats";
 import Client from "../Client";
 import Select from "react-select";
 import "react-select/dist/react-select.css";
 import ToggleDisplay from "react-toggle-display";
 
-
-var clubs = [];
-Client.club_search(res => clubs = res);
-
-const find_club_by_id = (id) => {
-    for (var i = 0; i < clubs.length; i++) {
-        if (clubs[i].id === id) {
-            return clubs[i];
-        }
-    }
-};
-
-class Matches extends Component {
+export default class Matches extends Component {
     constructor() {
         super();
 
@@ -27,30 +17,14 @@ class Matches extends Component {
             club2: null,
             matches: [],
             displayMatches: false,
-            isOpen: false,
-            activeMatch: null,
-            matchStats: []
+            activeMatch: null
         };
-
-        this.toggle = this.toggle.bind(this);
     }
-
-    toggle = () => {
-        this.setState({
-            isOpen: !this.state.isOpen
-        });
-    };
 
     displayMatchStats = (match) => {
         this.setState({
             activeMatch: match
         });
-        Client.club_match_stats(match.match_id, (stats) => {
-            this.setState({
-                matchStats: stats
-            });
-        });
-        this.toggle();
     };
 
     handleChange = (selectedOption) => {
@@ -102,9 +76,7 @@ class Matches extends Component {
             club2: null,
             matches: [],
             displayMatches: false,
-            isOpen: false,
-            activeMatch: null,
-            matchStats: []
+            activeMatch: null
         });
     };
 
@@ -135,35 +107,6 @@ class Matches extends Component {
                 </tr>
             )
         });
-
-        const home_team = activeMatch ? find_club_by_id(activeMatch.home_team_id) : "";
-        const away_team = activeMatch ? find_club_by_id(activeMatch.away_team_id) : "";
-        const date_of_game = activeMatch ? activeMatch.date_of_game : "";
-        const matchStatRows = this.state.matchStats.map((stat, idx) => {
-            var clubName;
-            if (stat.club_id === home_team.id) {
-                clubName = home_team.name;
-            } else {
-                clubName = away_team.name;
-            }
-
-            return <div>
-                {clubName}
-            </div>
-        });
-        const modal = activeMatch ?
-                <Modal isOpen={this.state.isOpen} toggle={this.toggle}>
-                    <ModalHeader toggle={this.toggle}>{home_team.name} vs. {away_team.name} ({date_of_game})</ModalHeader>
-                    <ModalBody>
-                        {matchStatRows}
-                    </ModalBody>
-                    <ModalFooter>
-                        <Button color="danger" onClick={this.toggle}>Close</Button>
-                    </ModalFooter>
-                </Modal>
-                :
-                ""
-            ;
 
         return (
             <Container>
@@ -199,7 +142,7 @@ class Matches extends Component {
                                 <Button color="danger" onClick={() => this.hardReset()}>Clear</Button>
                             </Col>
                         </Row>
-                        {modal}
+                        <MatchStats match={activeMatch}/>
                         <Row>
                             <ToggleDisplay show={this.state.displayMatches}>
                                 <h4>Matches</h4>
@@ -227,5 +170,3 @@ class Matches extends Component {
         );
     }
 }
-
-export default Matches;
