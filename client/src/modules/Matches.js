@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import {Button, Table, Container, Row, Col, Modal, ModalBody, ModalHeader, ModalFooter} from "reactstrap";
+import {Button, Table, Container, Row, Col} from "reactstrap";
 import {clubs, find_club_by_id} from "../util/ClubFunctions";
 import MatchStats from "./MatchStats";
 import Client from "../Client";
@@ -25,6 +25,12 @@ export default class Matches extends Component {
         this.setState({
             activeMatch: match
         });
+    };
+
+    closeMatchStats = () => {
+        this.setState({
+            activeMatch: null
+        })
     };
 
     handleChange = (selectedOption) => {
@@ -142,7 +148,7 @@ export default class Matches extends Component {
                                 <Button color="danger" onClick={() => this.hardReset()}>Clear</Button>
                             </Col>
                         </Row>
-                        <MatchStats match={activeMatch}/>
+                        <MatchStats match={activeMatch} handler={this.closeMatchStats}/>
                         <Row>
                             <ToggleDisplay show={this.state.displayMatches}>
                                 <h4>Matches</h4>

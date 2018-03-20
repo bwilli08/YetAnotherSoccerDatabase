@@ -179,28 +179,28 @@ app.get("/get/match-stats", (req, res) => {
         return;
     }
 
-    qry = `
-    SELECT
-        club_id,
-        SUM(goals_scored) as goals,
-        SUM(shots_on_goal) as shots_on_goal,
-        SUM(shots_total) as shots,
-        SUM(fouls_committed) as fouls,
-        SUM(interceptions) as interceptions,
-        SUM(saves) as saves,
-        SUM(clearances) as clearances,
-        SUM(tackles) as tackles,
-        SUM(offsides) as offsides,
-        SUM(blocks) as blocks,
-        SUM(passes_total) as passes,
-        SUM(crosses_total) as crosses,
-        SUM(yellow_cards) as yellow_cards,
-        SUM(red_cards) as red_cards
-    FROM
-        (SELECT * FROM PlayerGame WHERE fixture_id = ${match_id}) lineup,
-        Player p
-    WHERE lineup.player_id = p.id
-    GROUP BY club_id`;
+    qry =
+        `SELECT
+            club_id,
+            SUM(goals_scored) as goals,
+            SUM(shots_on_goal) as shots_on_goal,
+            SUM(shots_total) as shots,
+            SUM(fouls_committed) as fouls,
+            SUM(interceptions) as interceptions,
+            SUM(saves) as saves,
+            SUM(clearances) as clearances,
+            SUM(tackles) as tackles,
+            SUM(offsides) as offsides,
+            SUM(blocks) as blocks,
+            SUM(passes_total) as passes,
+            SUM(crosses_total) as crosses,
+            SUM(yellow_cards) as yellow_cards,
+            SUM(red_cards) as red_cards
+        FROM
+            (SELECT * FROM PlayerGame WHERE fixture_id = ${match_id}) lineup,
+            Player p
+        WHERE lineup.player_id = p.id
+        GROUP BY club_id`;
 
     db.query(qry, function (err, result) {
         if (err) throw err;
