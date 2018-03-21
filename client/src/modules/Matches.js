@@ -1,11 +1,11 @@
 import React, {Component} from "react";
 import {Button, Table, Container, Row, Col} from "reactstrap";
-import {clubs, find_club_by_id} from "../util/ClubFunctions";
-import MatchStats from "./MatchStats";
-import Client from "../Client";
 import Select from "react-select";
 import "react-select/dist/react-select.css";
 import ToggleDisplay from "react-toggle-display";
+import {clubs, find_club_by_id} from "../util/ClubFunctions";
+import MatchStats from "./MatchStats";
+import Client from "../Client";
 
 export default class Matches extends Component {
     constructor() {

@@ -196,7 +196,7 @@ class Players extends Component {
                             <h5>Searching for "{this.state.searchText}"...</h5>
                         </ToggleDisplay>
                         <ToggleDisplay show={showSearchTable}>
-                            <table>
+                            <Table>
                                 <thead>
                                 <tr>
                                     <th>Full Name</th>
@@ -211,7 +211,7 @@ class Players extends Component {
                                 <tbody>
                                 {playerRows}
                                 </tbody>
-                            </table>
+                            </Table>
                         </ToggleDisplay>
                         <ToggleDisplay show={this.state.displayStats}>
                             <h4>Season Statistics</h4>

@@ -319,7 +319,6 @@ app.get("/search/matches", (req, res) => {
 app.get("/readme", (req, res) => {
     fs.readFile("./README.md", {encoding: 'utf-8'}, function(err,data){
         if (!err) {
-            console.log('received data: ' + data);
             res.writeHead(200, {'Content-Type': 'text/plain'});
             res.end(data);
         } else {
