@@ -44,7 +44,8 @@ class MatchStats extends Component {
             home_lineup: [],
             away_lineup: [],
             matchStats: [],
-            activeTab: '1'
+            activeTab: '1',
+            playerTab: '1'
         };
 
         this.closeModal = this.closeModal.bind(this);
@@ -91,7 +92,8 @@ class MatchStats extends Component {
             home_lineup: [],
             away_lineup: [],
             matchStats: [],
-            activeTab: '1'
+            activeTab: '1',
+            playerTab: '1'
         });
         this.props.handler(false);
     };
@@ -104,14 +106,26 @@ class MatchStats extends Component {
         }
     };
 
-    getHeaderText = (match) => {
+    togglePlayerTab = (tab) => {
+        if (this.state.playerTab !== tab) {
+            this.setState({
+                playerTab: tab
+            });
+        }
+    };
+
+    getHeaderText = () => {
+        const {match} = this.props;
+
         if (match) {
             return `${match.league} - ${match.venue} (${match.date_of_game})`;
         }
         return "";
     };
 
-    getScoreHeader = (match) => {
+    getScoreHeader = () => {
+        const {match} = this.props;
+
         if (match) {
             const home_team = find_club_by_id(match.home_team_id);
             const away_team = find_club_by_id(match.away_team_id);
@@ -122,7 +136,10 @@ class MatchStats extends Component {
         return "";
     };
 
-    getMatchStats = (match, matchStats) => {
+    getMatchStats = () => {
+        const {match} = this.props;
+        const {matchStats} = this.state;
+
         if (match && matchStats.length > 0) {
             const home_team = find_club_by_id(match.home_team_id);
             const away_team = find_club_by_id(match.away_team_id);
@@ -179,7 +196,10 @@ class MatchStats extends Component {
         return "";
     };
 
-    getLineupTable = (match, home_lineup, away_lineup) => {
+    getLineupTable = () => {
+        const {match} = this.props;
+        const {home_lineup, away_lineup} = this.state;
+
         if (match && home_lineup.length > 0 && away_lineup.length > 0) {
             const home_team = find_club_by_id(match.home_team_id);
             const away_team = find_club_by_id(match.away_team_id);
@@ -218,15 +238,140 @@ class MatchStats extends Component {
         return "";
     };
 
-    render() {
-        const {match} = this.props;
-        const {home_lineup, away_lineup, matchStats} = this.state;
+    getPlayerStatRows = (player) => {
+        var player_stats = [];
+        [
+            'minutes_played',
+            'goals_scored',
+            'assists',
+            'shots_total',
+            'shots_on_goal',
+            'fouls_committed',
+            'fouls_drawn',
+            'interceptions',
+            'saves',
+            'clearances',
+            'tackles',
+            'offsides',
+            'blocks',
+            'yellow_cards',
+            'red_cards',
+            'passes_total',
+            'passes_accuracy',
+            'crosses_total',
+            'crosses_accuracy'
+        ]
+            .forEach(stat => {
+                    player_stats.push(
+                        <td class="text-center">{player[stat]}</td>
+                    )
+                }
+            );
+        return player_stats;
+    };
 
-        const header = this.getHeaderText(match);
-        const scoreHeader = this.getScoreHeader(match);
-        const matchStatTable = this.getMatchStats(match, matchStats);
-        const lineupTable = this.getLineupTable(match, home_lineup, away_lineup);
-        console.log(matchStats);
+    getLineupStats = (key_prefix, lineup) => {
+        var stat_rows = [];
+        for (var i = 0; i < lineup.length; i++) {
+            const rowKey = key_prefix + i;
+            const player = lineup[i];
+
+            const row =
+                <tr key={rowKey}>
+                    <td class="text-left">{player.nickname}</td>
+                    <td class="text-left">{player.position}</td>
+                    {this.getPlayerStatRows(player)}
+                </tr>;
+
+            stat_rows.push(row);
+        }
+
+        return (<div>
+            <table class="table table-bordered table-striped table-sm">
+                <thead>
+                <tr>
+                    <th class="text-left">Player</th>
+                    <th class="text-left">Pos.</th>
+                    <th class="text-center">Min.</th>
+                    <th class="text-center">G</th>
+                    <th class="text-center">A</th>
+                    <th class="text-center">S</th>
+                    <th class="text-center">SoT</th>
+                    <th class="text-center">FC</th>
+                    <th class="text-center">FD</th>
+                    <th class="text-center">I</th>
+                    <th class="text-center">SV</th>
+                    <th class="text-center">C</th>
+                    <th class="text-center">T</th>
+                    <th class="text-center">O</th>
+                    <th class="text-center">B</th>
+                    <th class="text-center">YC</th>
+                    <th class="text-center">RC</th>
+                    <th class="text-center">PTot</th>
+                    <th class="text-center">PAcc%</th>
+                    <th class="text-center">CTot</th>
+                    <th class="text-center">CAcc</th>
+                </tr>
+                </thead>
+                <tbody>
+                {stat_rows}
+                </tbody>
+            </table>
+            <p style={{"font-size": "10px"}}>
+                G = Goals, A = Assists, S = Shots, SoT = Shots On Target, FC = Fouls Conceded, FD = Fouls Drawn, I =
+                Interceptions, SV = Saves, C = Clearances, T = Tackles, O = Offsides, B = Blocks, YC = Yellow Cards, RC
+                = Red Cards, PTot = Total Passes, PAcc% = Pass Accuracy, CTot = Total Crosses, CAcc = Accurate Crosses
+            </p>
+        </div>);
+    };
+
+    getPlayerStatsTab = () => {
+        const {match} = this.props;
+        const {home_lineup, away_lineup} = this.state;
+
+        if (match && home_lineup.length > 0 && away_lineup.length > 0) {
+            const home_team = find_club_by_id(match.home_team_id);
+            const away_team = find_club_by_id(match.away_team_id);
+
+            const home_stats = this.getLineupStats("home", home_lineup);
+            const away_stats = this.getLineupStats("away", away_lineup);
+
+            return (
+                <div>
+                    <Nav tabs>
+                        <NavItem>
+                            <NavLink active={this.state.playerTab === '1'} onClick={() => this.togglePlayerTab('1')}>
+                                {home_team.name}
+                            </NavLink>
+                        </NavItem>
+                        <NavItem>
+                            <NavLink active={this.state.playerTab === '2'} onClick={() => this.togglePlayerTab('2')}>
+                                {away_team.name}
+                            </NavLink>
+                        </NavItem>
+                    </Nav>
+                    <TabContent activeTab={this.state.playerTab}>
+                        <TabPane tabId='1'>
+                            {home_stats}
+                        </TabPane>
+                        <TabPane tabId='2'>
+                            {away_stats}
+                        </TabPane>
+                    </TabContent>
+                </div>
+            );
+        }
+
+        return "";
+    };
+
+    render() {
+        const header = this.getHeaderText();
+        const scoreHeader = this.getScoreHeader();
+
+        const matchStatTable = this.getMatchStats();
+        const lineupTable = this.getLineupTable();
+        const playerStatsTab = this.getPlayerStatsTab();
 
         return (
             <Modal isOpen={this.state.isOpen} toggle={this.closeModal} size="lg">
@@ -258,7 +403,7 @@ class MatchStats extends Component {
                             {lineupTable}
                         </TabPane>
                         <TabPane tabId='3'>
-                            Player Stats.
+                            {playerStatsTab}
                         </TabPane>
                     </TabContent>
                 </ModalBody>
