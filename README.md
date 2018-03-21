@@ -1,4 +1,4 @@
-# YetAnotherSoccerDatabase
+# Yet Another Soccer Database
 
 ## Table of Contents
 - [Technologies and Sources](#technologies-and-sources)

@@ -134,7 +134,7 @@ export default class Matches extends Component {
                                 />
                             </Col>
                             <Col xs="2">
-                                <Button onClick={this.handleSearch}>Search Matches</Button>
+                                <Button onClick={this.handleSearch}>Search</Button>
                             </Col>
                             <Col xs="auto">
                                 <Button color="primary" active={this.state.rSelected === 1}

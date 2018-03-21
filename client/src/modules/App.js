@@ -1,5 +1,5 @@
 import React from "react";
-import {Navbar, NavbarBrand, Nav, NavLink, NavItem, Container, Jumbotron} from "reactstrap";
+import {Navbar, NavbarBrand, Nav, NavLink, NavItem, Jumbotron} from "reactstrap";
 import {Link, withRouter} from "react-router-dom";
 
 class App extends React.Component {
@@ -27,12 +27,8 @@ class App extends React.Component {
                         </NavItem>
                     </Nav>
                 </Navbar>
-                <Jumbotron>
-                    <Container>
-                                <h2>Welcome to Yet Another Soccer Database!</h2>
-                    </Container>
+                <Jumbotron fluid color="dark">
                 </Jumbotron>
-
                 { this.props.children }
             </div>
         );
