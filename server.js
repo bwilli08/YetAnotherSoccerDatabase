@@ -316,6 +316,32 @@ app.get("/search/matches", (req, res) => {
     }
 });
 
+app.get("/top10", (req, res) => {
+    const stat = req.query.stat;
+
+    if (!stat) {
+        res.json({
+            error: "You have to specify a stat to display top players for."
+        });
+        return;
+    }
+
+    const qry = `SELECT *
+                 FROM Player p,
+                     (SELECT player_id, SUM(${stat}) as total
+                     FROM PlayerSeason
+                     GROUP BY player_id
+                     ORDER BY total DESC
+                     LIMIT 10) best
+                 WHERE p.id=best.player_id`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
 app.get("/readme", (req, res) => {
     fs.readFile("./README.md", {encoding: 'utf-8'}, function(err,data){
         if (!err) {
