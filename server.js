@@ -326,6 +326,14 @@ app.get("/top10", (req, res) => {
         return;
     }
 
+    const valid_stats = ["goals", "assists", "minutes_played", "appearances", "yellow_cards", "red_cards"];
+    if (!valid_stats.includes(stat)) {
+        res.json({
+            error: `Invalid stat, must be one of [${valid_stats}].`
+        });
+        return;
+    }
+
     const qry = `SELECT *
                  FROM Player p,
                      (SELECT player_id, SUM(${stat}) as total
