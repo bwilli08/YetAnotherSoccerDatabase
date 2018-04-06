@@ -89,6 +89,15 @@ function stat_search(query, cb) {
         .then(cb);
 }
 
+function overview_search(query, cb) {
+    return fetch(`/top10?stat=${query}`, {
+        accept: "application/json"
+    })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
 function checkStatus(response) {
     if (response.status >= 200 && response.status < 300) {
         return response;
@@ -108,5 +117,5 @@ function parseText(response) {
     return response.text();
 }
 
-const Client = {get_readme, match_lineup, club_search, club_match_stats, club_seasons, club_match_search, player_search, stat_search, club_search_with_name};
+const Client = {overview_search, get_readme, match_lineup, club_search, club_match_stats, club_seasons, club_match_search, player_search, stat_search, club_search_with_name};
 export default Client;

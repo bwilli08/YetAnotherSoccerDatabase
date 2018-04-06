@@ -7,8 +7,8 @@ const MATCHING_CLUB_LIMIT = 25;
 
 class Clubs extends Component {
 
-    constructor(params) {
-        super(params);
+    constructor() {
+        super();
 
         this.state = {
             searchText: "",
