@@ -16,7 +16,7 @@ import {Navbar, NavbarBrand, Nav, NavLink, NavItem, Jumbotron} from "reactstrap"
 const Header = () => (
     <div>
         <Navbar color="inverse" light expand="md">
-            <NavbarBrand href="/">Yet Another Soccer Database</NavbarBrand>
+            <NavbarBrand href="/">YASD</NavbarBrand>
             <Nav className="ml-auto" navbar>
                 <NavItem>
                     <NavLink tag={Link} to="/home">Home</NavLink>
@@ -35,7 +35,8 @@ const Header = () => (
                 </NavItem>
             </Nav>
         </Navbar>
-        <Jumbotron fluid color="info">
+        <Jumbotron color="info">
+            <h3 className="text-center">Welcome to Yet Another Soccer Database!</h3>
         </Jumbotron>
     </div>
 );

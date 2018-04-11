@@ -1,7 +1,14 @@
 import React, {Component} from "react";
 import Client from "../Client";
-import {Container, Row, Col} from "reactstrap";
-import {BootstrapTable, TableHeaderColumn} from "react-bootstrap-table";
+import {Col, Container, Row} from "reactstrap";
+import ReactMarkdown from "react-markdown";
+
+const introduction = `
+### Introduction
+Welcome to Yet Another Soccer Database, a website that provides access to soccer statistics from across the world.
+Throughout the site, you can search for specific players, clubs, and matches from the past two seasons. Don't worry,
+we're working on getting information from more than the past two seasons!
+`;
 
 export default class HomePage extends Component {
 
@@ -39,46 +46,67 @@ export default class HomePage extends Component {
         });
     }
 
-    getTable = (variable, dataName) => {
+    getTable = (variable, dataName, header) => {
         const data = this.state[variable];
 
-        const options = {
-            noDataText: "Searching for data..."
-        };
-
-        return (
-            <BootstrapTable data={data} options={options} striped condensed>
-                <TableHeaderColumn isKey dataField="playerId" hidden>Player ID</TableHeaderColumn>
-                <TableHeaderColumn dataField="nickname">Name</TableHeaderColumn>
-                <TableHeaderColumn dataField="nationality">Country</TableHeaderColumn>
-                <TableHeaderColumn dataField="total">{dataName}</TableHeaderColumn>
-            </BootstrapTable>
-        )
-    };
-
-    render() {
-        const topScorerTable = this.getTable("topScorers", "Goals");
-        const topAssistersTable = this.getTable("topAssisters", "Assists");
-        const topYellowCardsTable = this.getTable("topYellowCards", "Yellow Cards");
-        const topRedCardsTable = this.getTable("topRedCards", "Red Cards");
+        const dataRows = data.map((data, idx) => (
+            <tr key={idx}>
+                <td className="right aligned">{data.nickname}</td>
+                <td className="right aligned">{data.nationality}</td>
+                <td className="right aligned">{data.total}</td>
+            </tr>
+        ));
 
         return (
             <div>
-                <Row>
-                    <div class="col-md-4 col-sm-4">
-                        {topScorerTable}
-                        {topAssistersTable}
-                        {topYellowCardsTable}
-                        {topRedCardsTable}
-                    </div>
-                    <div class="col-md-4 col-sm-4">
-                        Introduction Write Up
-                    </div>
-                    <div class="col-md-4 col-sm-4">
-                        Country Stuff
-                    </div>
-                </Row>
+                <h4>{header}</h4>
+                <table className="table table-striped table-bordered table-sm">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Nationality</th>
+                        <th>{dataName}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {dataRows}
+                    </tbody>
+                </table>
             </div>
+        );
+    };
+
+    getPlayerColumn = () => {
+        const topScorerTable = this.getTable("topScorers", "Goals", "Top Scorers");
+        const topAssistersTable = this.getTable("topAssisters", "Assists", "Top Assisters");
+        const topYellowCardsTable = this.getTable("topYellowCards", "Yellow Cards", "Most Yellow Cards");
+        const topRedCardsTable = this.getTable("topRedCards", "Red Cards", "Most Red Cards");
+
+        return (
+            <Col>
+                {topScorerTable}
+                {topAssistersTable}
+                {topYellowCardsTable}
+                {topRedCardsTable}
+            </Col>
+        );
+    };
+
+    render() {
+        const playerColumn = this.getPlayerColumn();
+
+        return (
+            <Container fluid>
+                <Row>
+                    {playerColumn}
+                    <Col>
+                        <ReactMarkdown source={introduction}/>
+                    </Col>
+                    <Col>
+                        Country Stuff
+                    </Col>
+                </Row>
+            </Container>
         );
     }
 
