@@ -11,7 +11,7 @@ import registerServiceWorker from "./registerServiceWorker";
 import "bootstrap/dist/css/bootstrap.css";
 import "react-bootstrap-table/css/react-bootstrap-table.css";
 import "react-bootstrap-table/dist/react-bootstrap-table-all.min.css";
-import {Navbar, NavbarBrand, Nav, NavLink, NavItem, Jumbotron} from "reactstrap";
+import {Container, Navbar, NavbarBrand, Nav, NavLink, NavItem, Jumbotron} from "reactstrap";
 
 const Header = () => (
     <div>
@@ -42,15 +42,18 @@ const Header = () => (
 );
 
 const Footer = () => (
-    <div>
-    </div>
+    <footer>
+        <Container fluid>
+            Test
+        </Container>
+    </footer>
 );
 
 ReactDOM.render((
     <BrowserRouter>
-        <div>
+        <div className="main-container">
             <Header/>
-            <Redirect exact from="/" to="/home"/>
+            <Route render={() => <Redirect exact from="/" to="/home"/>}/>
             <Route path="/home" component={HomePage}/>
             <Route path="/about" component={About}/>
             <Route path="/clubs" component={Clubs}/>

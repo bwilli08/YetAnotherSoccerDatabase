@@ -316,7 +316,7 @@ app.get("/search/matches", (req, res) => {
     }
 });
 
-app.get("/top10", (req, res) => {
+app.get("/top10/player", (req, res) => {
     const stat = req.query.stat;
 
     if (!stat) {
@@ -334,14 +334,61 @@ app.get("/top10", (req, res) => {
         return;
     }
 
-    const qry = `SELECT *
+    const qry = `SELECT p.nickname as nickname,
+                    p.nationality as nationality,
+                    best.total as total
                  FROM Player p,
                      (SELECT player_id, SUM(${stat}) as total
-                     FROM PlayerSeason
+                     FROM PlayerSeason ps
                      GROUP BY player_id
                      ORDER BY total DESC
                      LIMIT 10) best
                  WHERE p.id=best.player_id`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
+app.get("/top10/club", (req, res) => {
+    const stat = req.query.stat;
+    var order = req.query.order;
+
+    if (!stat) {
+        res.json({
+            error: "You have to specify a stat to display top clubs for."
+        });
+        return;
+    }
+
+    if (!order) {
+        order = "DESC";
+    }
+
+    const valid_stats = ["goals_for_total", "goals_against_total", "clean_sheet_total", "failed_to_score_total"];
+    if (!valid_stats.includes(stat)) {
+        res.json({
+            error: `Invalid stat, must be one of [${valid_stats}].`
+        });
+        return;
+    }
+
+    const qry = `SELECT club.name as club,
+                    country.name as country,
+                    best.total as total
+                 FROM Club club,
+                    Country country,
+                    (SELECT club_id,
+                        SUM(${stat}) as total
+                    FROM ClubSeasonStats css, Season s
+                    WHERE css.season_id=s.id AND s.year="2017/2018"
+                    GROUP BY club_id) best
+                 WHERE club.country_id=country.id
+                    AND club.id=best.club_id
+                 ORDER BY best.total ${order}
+                 LIMIT 10`;
 
     db.query(qry, function (err, result) {
         if (err) throw err;

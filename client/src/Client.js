@@ -89,8 +89,25 @@ function stat_search(query, cb) {
         .then(cb);
 }
 
-function overview_search(query, cb) {
-    return fetch(`/top10?stat=${query}`, {
+function overview_search(type, stat, order, cb) {
+    var qry = `/top10/${type}?stat=${stat}`;
+
+    if (order) {
+        qry = qry.concat(`&order=${order}`)
+    }
+
+    console.log(qry);
+
+    return fetch(qry, {
+        accept: "application/json"
+    })
+        .then(checkStatus)
+        .then(parseJSON)
+        .then(cb);
+}
+
+function seasons(cb) {
+    return fetch("/seasons", {
         accept: "application/json"
     })
         .then(checkStatus)
@@ -117,5 +134,17 @@ function parseText(response) {
     return response.text();
 }
 
-const Client = {overview_search, get_readme, match_lineup, club_search, club_match_stats, club_seasons, club_match_search, player_search, stat_search, club_search_with_name};
+const Client = {
+    overview_search,
+    get_readme,
+    match_lineup,
+    club_search,
+    club_match_stats,
+    club_seasons,
+    club_match_search,
+    player_search,
+    stat_search,
+    club_search_with_name,
+    seasons
+};
 export default Client;

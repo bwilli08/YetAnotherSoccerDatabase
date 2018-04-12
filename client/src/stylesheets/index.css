@@ -1,9 +1,24 @@
-body {
-    margin: 0;
-    padding: 0;
-    font-family: sans-serif;
+* {
+    box-sizing: border-box;
 }
-
-#food-search {
-    margin-top: 5em;
+*:before,
+*:after {
+    box-sizing: border-box;
+}
+html,
+body {
+    height: 100%;
+    position: relative;
+}
+.main-container {
+    min-height: 100vh; /* will cover the 100% of viewport */
+    overflow: hidden;
+    display: block;
+    position: relative;
+    padding-bottom: 100px; /* height of your footer */
+}
+footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
 }
