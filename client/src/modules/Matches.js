@@ -4,7 +4,7 @@ import Select from "react-select";
 import "react-select/dist/react-select.css";
 import ToggleDisplay from "react-toggle-display";
 import {clubs, find_club_by_id} from "../util/ClubFunctions";
-import MatchStats from "./MatchStats";
+import MatchStatModal from "../components/MatchStatModal";
 import Client from "../Client";
 
 export default class Matches extends Component {
@@ -148,7 +148,7 @@ export default class Matches extends Component {
                                 <Button color="danger" onClick={() => this.hardReset()}>Clear</Button>
                             </Col>
                         </Row>
-                        <MatchStats match={activeMatch} handler={this.closeMatchStats}/>
+                        <MatchStatModal match={activeMatch} handler={this.closeMatchStats}/>
                         <Row>
                             <ToggleDisplay show={this.state.displayMatches}>
                                 <h4>Matches</h4>
