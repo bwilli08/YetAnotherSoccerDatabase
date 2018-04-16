@@ -99,7 +99,7 @@ app.get("/search/clubs", (req, res) => {
 
     var qry;
     if (!name) {
-        qry = "SELECT * FROM Club";
+        qry = "SELECT * FROM Club club";
     } else {
         qry =
             `SELECT
@@ -116,9 +116,10 @@ app.get("/search/clubs", (req, res) => {
                     JOIN
                 Country country ON club.country_id = country.id
                     JOIN
-                Venue venue ON club.venue_id = venue.id
-            ORDER BY club.name ASC`;
+                Venue venue ON club.venue_id = venue.id`;
     }
+
+    qry = qry.concat(" ORDER BY club.name ASC");
 
     db.query(qry, function (err, result) {
         if (err) throw err;
