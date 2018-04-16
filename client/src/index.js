@@ -6,7 +6,7 @@ import About from "./modules/About";
 import Clubs from "./modules/Clubs";
 import Matches from "./modules/Matches";
 import Players from "./modules/Players";
-import {BrowserRouter, Redirect, Route, Link} from "react-router-dom";
+import {BrowserRouter, Redirect, Route, Link, Switch} from "react-router-dom";
 import registerServiceWorker from "./registerServiceWorker";
 import "bootstrap/dist/css/bootstrap.css";
 import "react-bootstrap-table/css/react-bootstrap-table.css";
@@ -53,12 +53,14 @@ ReactDOM.render((
     <BrowserRouter>
         <div className="main-container">
             <Header/>
-            <Route render={() => <Redirect exact from="/" to="/home"/>}/>
-            <Route path="/home" component={HomePage}/>
-            <Route path="/about" component={About}/>
-            <Route path="/clubs" component={Clubs}/>
-            <Route path="/matches" component={Matches}/>
-            <Route path="/players" component={Players}/>
+            <Switch>
+                <Route path="/home" component={HomePage}/>
+                <Route path="/about" component={About}/>
+                <Route path="/clubs" component={Clubs}/>
+                <Route path="/matches" component={Matches}/>
+                <Route path="/players" component={Players}/>
+                <Redirect from="/" to="/home"/>
+            </Switch>
             <Footer/>
         </div>
     </BrowserRouter>
