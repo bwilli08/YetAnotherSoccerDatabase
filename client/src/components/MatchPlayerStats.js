@@ -1,11 +1,5 @@
 import React, {Component} from "react";
-import {
-    TabContent,
-    TabPane,
-    NavLink,
-    Nav,
-    NavItem
-} from "reactstrap";
+import {TabContent, TabPane, NavLink, Nav, NavItem} from "reactstrap";
 import {find_club_by_id} from "../util/ClubFunctions";
 
 const PLAYER_STATS = [
@@ -52,11 +46,11 @@ export default class MatchPlayerStats extends Component {
         var player_stats = [];
 
         PLAYER_STATS.forEach(stat => {
-                    player_stats.push(
-                        <td className="text-center">{player[stat]}</td>
-                    )
-                }
-            );
+                player_stats.push(
+                    <td className="text-center">{player[stat]}</td>
+                )
+            }
+        );
         return player_stats;
     };
 

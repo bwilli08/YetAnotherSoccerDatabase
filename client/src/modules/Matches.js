@@ -130,7 +130,6 @@ export default class Matches extends Component {
                                     onChange={this.handleChange}
                                     options={clubs}
                                     matchPos="any"
-                                    ignoreCase="True"
                                 />
                             </Col>
                             <Col xs="2">

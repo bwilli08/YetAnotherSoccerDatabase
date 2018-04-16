@@ -13,6 +13,7 @@ import {
     ModalFooter
 } from "reactstrap";
 import {find_club_by_id} from "../util/ClubFunctions";
+import MatchLineupTable from "./MatchLineupTable";
 import MatchStatTable from "./MatchStatTable";
 import MatchPlayerStats from "./MatchPlayerStats";
 import "react-select/dist/react-select.css";
@@ -122,59 +123,15 @@ export default class MatchStatModal extends Component {
             const home_team = find_club_by_id(match.home_team_id);
             const away_team = find_club_by_id(match.away_team_id);
 
-            return (<h3 class="text-center">{home_team.name} {match.home_team_score}
+            return (<h3 className="text-center">{home_team.name} {match.home_team_score}
                 - {match.away_team_score} {away_team.name}</h3>);
         }
-        return "";
-    };
-
-    getLineupTable = () => {
-        const {match} = this.props;
-        const {home_lineup, away_lineup} = this.state;
-
-        if (match && home_lineup.length > 0 && away_lineup.length > 0) {
-            const home_team = find_club_by_id(match.home_team_id);
-            const away_team = find_club_by_id(match.away_team_id);
-            const max_size = Math.max(home_lineup.length, away_lineup.length);
-
-            const lineup_rows = [];
-            for (var i = 0; i < max_size; i++) {
-                const home_player = i < home_lineup.length ? home_lineup[i] : {"name": "", "position": ""};
-                const away_player = i < away_lineup.length ? away_lineup[i] : {"name": "", "position": ""};
-
-
-                const row =
-                    <tr key={i}>
-                        <td class="text-left">{home_player.nickname} ({home_player.position})</td>
-                        <td class="text-right">({away_player.position}) {away_player.nickname}</td>
-                    </tr>;
-
-                lineup_rows.push(row);
-            }
-
-            return (
-                <table class="table table-bordered table-striped table-sm">
-                    <thead>
-                    <tr>
-                        <th class="text-left">{home_team.name}</th>
-                        <th class="text-right">{away_team.name}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {lineup_rows}
-                    </tbody>
-                </table>
-            );
-        }
-
         return "";
     };
 
     render() {
         const header = this.getHeaderText();
         const scoreHeader = this.getScoreHeader();
-
-        const lineupTable = this.getLineupTable();
 
         return (
             <Modal isOpen={this.state.isOpen} toggle={this.closeModal} size="lg">
@@ -203,7 +160,8 @@ export default class MatchStatModal extends Component {
                             <MatchStatTable match={this.props.match} matchStats={this.state.matchStats}/>
                         </TabPane>
                         <TabPane tabId='2'>
-                            {lineupTable}
+                            <MatchLineupTable match={this.props.match} home_lineup={this.state.home_lineup}
+                                              away_lineup={this.state.away_lineup}/>
                         </TabPane>
                         <TabPane tabId='3'>
                             <MatchPlayerStats match={this.props.match} home_lineup={this.state.home_lineup}
