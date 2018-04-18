@@ -29,10 +29,10 @@ CREATE TABLE Position (
 
 # Leagues API - include country and seasons
 CREATE TABLE Competition (
-  id                INTEGER PRIMARY KEY,
-  is_cup            BOOLEAN,
-  country_id        INTEGER,
-  name              VARCHAR(64),
+  id         INTEGER PRIMARY KEY,
+  is_cup     BOOLEAN,
+  country_id INTEGER,
+  name       VARCHAR(64),
 
   FOREIGN KEY (country_id) REFERENCES Country (id)
 );
@@ -50,11 +50,11 @@ CREATE TABLE Season (
 
 # Populate as we go through ClubSeason
 CREATE TABLE Club (
-  id               INTEGER PRIMARY KEY,
-  name             VARCHAR(64),
-  country_id       INTEGER,
-  is_national_team BOOLEAN,
-  venue_id         INTEGER,
+  id                        INTEGER PRIMARY KEY,
+  name                      VARCHAR(64),
+  country_id                INTEGER,
+  is_national_team          BOOLEAN,
+  venue_id                  INTEGER,
   finished_fixture_backfill BOOLEAN,
 
   FOREIGN KEY (country_id) REFERENCES Country (id),
@@ -63,8 +63,8 @@ CREATE TABLE Club (
 
 # Club by Season API
 CREATE TABLE ClubSeason (
-  season_id INTEGER,
-  club_id   INTEGER,
+  season_id                INTEGER,
+  club_id                  INTEGER,
   finished_lineup_backfill BOOLEAN,
 
   PRIMARY KEY (season_id, club_id),
@@ -213,30 +213,33 @@ CREATE TABLE PlayerGame (
 
 ##### Data Warehouse #####
 CREATE TABLE PlayerStatsByYear (
-  player_id         INTEGER,
-  year              VARCHAR(12),
+  player_id       INTEGER,
+  year            VARCHAR(12),
 
-  goals             INTEGER,
-  assists           INTEGER,
-  shots_on_goal     INTEGER,
-  shots_total       INTEGER,
-  fouls_committed   INTEGER,
-  fouls_drawn       INTEGER,
-  interceptions     INTEGER,
-  saves             INTEGER,
-  clearances        INTEGER,
-  tackles           INTEGER,
-  offsides          INTEGER,
-  blocks            INTEGER,
-  yellow_cards      INTEGER,
-  red_cards         INTEGER,
-  passes_total      INTEGER,
-  crosses_total     INTEGER,
+  goals           INTEGER,
+  assists         INTEGER,
+  shots_on_goal   INTEGER,
+  shots_total     INTEGER,
+  fouls_committed INTEGER,
+  fouls_drawn     INTEGER,
+  interceptions   INTEGER,
+  saves           INTEGER,
+  clearances      INTEGER,
+  tackles         INTEGER,
+  offsides        INTEGER,
+  blocks          INTEGER,
+  yellow_cards    INTEGER,
+  red_cards       INTEGER,
+  passes          INTEGER,
+  crosses         INTEGER,
 
-  nationality       VARCHAR(64),
-  position          VARCHAR(4),
-  name              VARCHAR(64),
+  nationality     VARCHAR(64),
+  position        VARCHAR(32),
+  name            VARCHAR(64),
 
   PRIMARY KEY (player_id, year),
-  FOREIGN KEY (player_id) REFERENCES Player(id)
+  FOREIGN KEY (player_id) REFERENCES Player (id),
+
+  INDEX (goals),
+  INDEX (assists)
 );
