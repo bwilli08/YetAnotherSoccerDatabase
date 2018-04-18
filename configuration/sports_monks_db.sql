@@ -44,7 +44,8 @@ CREATE TABLE Season (
   league_id         INTEGER,
   finished_backfill BOOLEAN,
 
-  FOREIGN KEY (league_id) REFERENCES Competition (id)
+  FOREIGN KEY (league_id) REFERENCES Competition (id),
+  INDEX (year)
 );
 
 # Populate as we go through ClubSeason
@@ -143,7 +144,8 @@ CREATE TABLE PlayerSeason (
   PRIMARY KEY (player_id, season_id, club_id),
   FOREIGN KEY (player_id) REFERENCES Player (id),
   FOREIGN KEY (season_id, club_id) REFERENCES ClubSeason (season_id, club_id),
-  FOREIGN KEY (position_id) REFERENCES Position (id)
+  FOREIGN KEY (position_id) REFERENCES Position (id),
+  INDEX (season_id)
 );
 
 # Fixture API - For each team from 1990-01-01 to now.
@@ -207,4 +209,34 @@ CREATE TABLE PlayerGame (
   PRIMARY KEY (player_id, fixture_id),
   FOREIGN KEY (player_id, season_id, club_id) REFERENCES PlayerSeason (player_id, season_id, club_id),
   FOREIGN KEY (fixture_id) REFERENCES Fixture (id)
+);
+
+##### Data Warehouse #####
+CREATE TABLE PlayerStatsByYear (
+  player_id         INTEGER,
+  year              VARCHAR(12),
+
+  goals             INTEGER,
+  assists           INTEGER,
+  shots_on_goal     INTEGER,
+  shots_total       INTEGER,
+  fouls_committed   INTEGER,
+  fouls_drawn       INTEGER,
+  interceptions     INTEGER,
+  saves             INTEGER,
+  clearances        INTEGER,
+  tackles           INTEGER,
+  offsides          INTEGER,
+  blocks            INTEGER,
+  yellow_cards      INTEGER,
+  red_cards         INTEGER,
+  passes_total      INTEGER,
+  crosses_total     INTEGER,
+
+  nationality       VARCHAR(64),
+  position          VARCHAR(4),
+  name              VARCHAR(64),
+
+  PRIMARY KEY (player_id, year),
+  FOREIGN KEY (player_id) REFERENCES Player(id)
 );

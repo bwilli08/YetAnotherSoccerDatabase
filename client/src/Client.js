@@ -6,39 +6,19 @@ function club_search(cb) {
 function club_search_with_name(club, cb) {
     const params = club ? `?name=${club}` : "";
 
-    return fetch(`/search/clubs${params}`, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(`/search/clubs${params}`, cb);
 }
 
 function get_readme(cb) {
-    return fetch("/readme", {
-        accept: "text/plain"
-    })
-        .then(checkStatus)
-        .then(parseText)
-        .then(cb);
+    return text_query("/readme", cb);
 }
 
 function club_match_stats(match_id, cb) {
-    return fetch(`/get/match-stats?match_id=${match_id}`, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(`/get/match-stats?match_id=${match_id}`, cb);
 }
 
 function match_lineup(match_id, cb) {
-    return fetch(`/get/lineup?match_id=${match_id}`, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(`/get/lineup?match_id=${match_id}`, cb);
 }
 
 function club_match_search(club1, club2, cb) {
@@ -48,21 +28,11 @@ function club_match_search(club1, club2, cb) {
         club2param = `&club2=${club2}`;
     }
 
-    return fetch(`/search/matches?type=club${club1param}${club2param}`, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(`/search/matches?type=club${club1param}${club2param}`, cb);
 }
 
 function club_seasons(query, cb) {
-    return fetch(`/search/club-season?club_id=${query}`, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(`/search/club-season?club_id=${query}`, cb);
 }
 
 function player_search(query, position, cb) {
@@ -72,46 +42,59 @@ function player_search(query, position, cb) {
         qry = qry.concat(`&position=${position}`);
     }
 
-    return fetch(qry, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(qry, cb);
 }
 
 function stat_search(query, cb) {
-    return fetch(`/search/player-season?player_id=${query}`, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(`/search/player-season?player_id=${query}`, cb);
 }
 
-function overview_search(type, stat, order, cb) {
+function overview_search(type, stat, order, year, cb) {
     var qry = `/top10/${type}?stat=${stat}`;
 
     if (order) {
         qry = qry.concat(`&order=${order}`)
     }
 
-    console.log(qry);
+    if (year) {
+        qry = qry.concat(`&year=${year}`)
+    }
 
-    return fetch(qry, {
-        accept: "application/json"
-    })
-        .then(checkStatus)
-        .then(parseJSON)
-        .then(cb);
+    return json_query(qry, cb);
 }
 
 function seasons(cb) {
-    return fetch("/seasons", {
-        accept: "application/json"
+    return json_query("/seasons", cb);
+}
+
+function player_graph_data(cb) {
+    return json_query("/get/player-stats", cb);
+}
+
+function json_query(qry, cb) {
+    const type = {
+        accept: "application/json",
+        parse: parseJSON
+    };
+
+    return query(qry, type, cb);
+}
+
+function text_query(qry, cb) {
+    const type = {
+        accept: "text/plain",
+        parse: parseText
+    };
+
+    return query(qry, type, cb);
+}
+
+function query(qry, type, cb) {
+    return fetch(qry, {
+        accept: type.accept
     })
         .then(checkStatus)
-        .then(parseJSON)
+        .then(type.parse)
         .then(cb);
 }
 

@@ -319,6 +319,8 @@ app.get("/search/matches", (req, res) => {
 
 app.get("/top10/player", (req, res) => {
     const stat = req.query.stat;
+    var order = req.query.order;
+    const year = req.query.year;
 
     if (!stat) {
         res.json({
@@ -327,7 +329,26 @@ app.get("/top10/player", (req, res) => {
         return;
     }
 
-    const valid_stats = ["goals", "assists", "minutes_played", "appearances", "yellow_cards", "red_cards"];
+    if (!order) {
+        order = "DESC";
+    }
+
+    const valid_stats = [
+        "goals",
+        "assists",
+        "shots_on_goal",
+        "shots",
+        "fouls_committed",
+        "fouls_drawn",
+        "interceptions",
+        "saves",
+        "clearances",
+        "tackles",
+        "offsides",
+        "blocks",
+        "yellow_cards",
+        "red_cards"
+    ];
     if (!valid_stats.includes(stat)) {
         res.json({
             error: `Invalid stat, must be one of [${valid_stats}].`
@@ -335,16 +356,19 @@ app.get("/top10/player", (req, res) => {
         return;
     }
 
-    const qry = `SELECT p.nickname as nickname,
-                    p.nationality as nationality,
-                    best.total as total
-                 FROM Player p,
-                     (SELECT player_id, SUM(${stat}) as total
-                     FROM PlayerSeason ps
-                     GROUP BY player_id
-                     ORDER BY total DESC
-                     LIMIT 10) best
-                 WHERE p.id=best.player_id`;
+    var qry = `SELECT
+                    name,
+                    nationality,
+                    SUM(${stat}) as total
+                FROM PlayerStatsByYear `;
+
+    if (year) {
+        qry = qry.concat(`WHERE year='${year}' `)
+    }
+
+    qry = qry.concat(`GROUP BY player_id ORDER BY total ${order} LIMIT 10`);
+
+    console.log(qry);
 
     db.query(qry, function (err, result) {
         if (err) throw err;
@@ -356,6 +380,7 @@ app.get("/top10/player", (req, res) => {
 app.get("/top10/club", (req, res) => {
     const stat = req.query.stat;
     var order = req.query.order;
+    const year = req.query.year;
 
     if (!stat) {
         res.json({
@@ -384,7 +409,7 @@ app.get("/top10/club", (req, res) => {
                     (SELECT club_id,
                         SUM(${stat}) as total
                     FROM ClubSeasonStats css, Season s
-                    WHERE css.season_id=s.id AND s.year="2017/2018"
+                    WHERE css.season_id=s.id AND s.year='${year}'
                     GROUP BY club_id) best
                  WHERE club.country_id=country.id
                     AND club.id=best.club_id

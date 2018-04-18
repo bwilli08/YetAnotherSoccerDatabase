@@ -1,12 +1,15 @@
 import React, {Component} from "react";
 import Client from "../Client";
 
+
+
 export default class Top10Tables extends Component {
 
     constructor(props) {
         super(props);
 
         this.state = {
+            numLoading: 4,
             data1: [],
             data2: [],
             data3: [],
@@ -15,33 +18,39 @@ export default class Top10Tables extends Component {
     }
 
     componentDidMount() {
-        const {type, order} = this.props;
+        const {type, order, year} = this.props;
 
         if (type) {
-            const stat1 = type === "player" ? "goals" : "goals_for_total";
-            Client.overview_search(type, stat1, order, res => {
+            const isPlayer = type === "player";
+
+            const stat1 = isPlayer ? "goals" : "goals_for_total";
+            Client.overview_search(type, stat1, order, year, res => {
                 this.setState({
+                    numLoading: this.state.numLoading - 1,
                     data1: res
                 })
             });
 
-            const stat2 = type === "player" ? "assists" : "goals_against_total";
-            Client.overview_search(type, stat2, order, res => {
+            const stat2 = isPlayer ? "assists" : "goals_against_total";
+            Client.overview_search(type, stat2, order, year, res => {
                 this.setState({
+                    numLoading: this.state.numLoading - 1,
                     data2: res
                 })
             });
 
-            const stat3 = type === "player" ? "yellow_cards" : "clean_sheet_total";
-            Client.overview_search(type, stat3, order, res => {
+            const stat3 = isPlayer ? "yellow_cards" : "clean_sheet_total";
+            Client.overview_search(type, stat3, order, year, res => {
                 this.setState({
+                    numLoading: this.state.numLoading - 1,
                     data3: res
                 })
             });
 
-            const stat4 = type === "player" ? "red_cards" : "failed_to_score_total";
-            Client.overview_search(type, stat4, order, res => {
+            const stat4 = isPlayer ? "red_cards" : "failed_to_score_total";
+            Client.overview_search(type, stat4, order, year, res => {
                 this.setState({
+                    numLoading: this.state.numLoading - 1,
                     data4: res
                 })
             });
@@ -53,7 +62,7 @@ export default class Top10Tables extends Component {
 
         const dataRows = data.map((data, idx) => (
             <tr key={idx}>
-                <td className="right aligned">{isPlayer ? data.nickname : data.club}</td>
+                <td className="right aligned">{isPlayer ? data.name : data.club}</td>
                 <td className="right aligned">{isPlayer ? data.nationality : data.country}</td>
                 <td className="right aligned">{data.total}</td>
             </tr>
@@ -79,6 +88,12 @@ export default class Top10Tables extends Component {
     };
 
     render() {
+        const {numLoading} = this.state;
+
+        if (numLoading > 0) {
+            return (<div>Loading table data...</div>);
+        }
+
         const {type, order} = this.props;
 
         const isPlayer = type === "player";
