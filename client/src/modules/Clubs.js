@@ -1,6 +1,7 @@
 import React, {Component} from "react";
 import {Button, InputGroup, Input, Table, Container, Row, Col} from "reactstrap";
 import Client from "../Client";
+import ClubModal from "../components/ClubModal";
 import ToggleDisplay from "react-toggle-display";
 
 const MATCHING_CLUB_LIMIT = 25;
@@ -19,9 +20,7 @@ class Clubs extends Component {
             clubs: [],
             isClubSearching: false,
 
-            displaySeasons: false,
-            isSeasonsSearching: false,
-            seasons: []
+            activeClub: null
         };
     }
 
@@ -34,7 +33,7 @@ class Clubs extends Component {
     handleSearch = () => {
         const club_name = this.state.searchText;
 
-        if (!this.state.displayStats && club_name === this.state.activeSearchText) {
+        if (club_name === this.state.activeSearchText) {
             return;
         }
 
@@ -43,8 +42,7 @@ class Clubs extends Component {
                 displaySearchMessage: false,
                 displayClubs: true,
                 clubs: [],
-                isClubSearching: true,
-                displaySeasons: false
+                isClubSearching: true
             });
 
             Client.club_search_with_name(club_name, clubs => {
@@ -67,23 +65,14 @@ class Clubs extends Component {
         }
     };
 
-    getSeasons = (club) => {
+    setActiveClub = (club) => {
         this.setState({
-            displaySeasons: true,
-            isSeasonsSearching: true,
-            clubs: [club]
-        });
-
-        Client.club_seasons(club.club_id, seasons => {
-            this.setState({
-                seasons: seasons,
-                isSeasonsSearching: false
-            });
+            activeClub: club
         });
     };
 
     render() {
-        const {clubs, seasons} = this.state;
+        const {clubs, activeClub} = this.state;
 
         const clubRows = clubs.map((club, idx) => (
             <tr key={idx}>
@@ -94,19 +83,7 @@ class Clubs extends Component {
                 <td className="right aligned">{club.venue_name}</td>
                 <td className="right aligned">{club.venue_capacity}</td>
                 <td>
-                    <Button onClick={() => this.getSeasons(club)}>View</Button>
-                </td>
-            </tr>
-        ));
-
-        const seasonRows = seasons.map((season, idx) => (
-            <tr>
-                <td>{season.name}</td>
-                <td>{season.year}</td>
-                <td>{season.win_total}-{season.draw_total}-{season.lost_total}</td>
-                <td>{season.goals_for_total}-{season.goals_against_total}</td>
-                <td>
-                    TODO
+                    <Button onClick={() => this.setActiveClub(club)}>More</Button>
                 </td>
             </tr>
         ));
@@ -142,7 +119,7 @@ class Clubs extends Component {
                                     <th>City</th>
                                     <th>Stadium</th>
                                     <th>Capacity</th>
-                                    <th>About</th>
+                                    <th></th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -150,23 +127,7 @@ class Clubs extends Component {
                                 </tbody>
                             </Table>
                         </ToggleDisplay>
-                        <ToggleDisplay show={this.state.displaySeasons}>
-                            <h4>Seasons</h4>
-                            <Table>
-                                <thead>
-                                <tr>
-                                    <th>Competition</th>
-                                    <th>Season</th>
-                                    <th>Record (W-D-L)</th>
-                                    <th>Goals (For-Against)</th>
-                                    <th>More</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {seasonRows}
-                                </tbody>
-                            </Table>
-                        </ToggleDisplay>
+                        <ClubModal club={activeClub} handler={() => this.setActiveClub(null)}/>
                     </Col>
                 </Row>
             </Container>

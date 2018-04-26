@@ -13,31 +13,7 @@ import {
     ModalFooter,
     Table
 } from "reactstrap";
-import {find_club_by_id} from "../util/ClubFunctions";
-import MatchLineupTable from "./MatchLineupTable";
-import MatchStatTable from "./MatchStatTable";
-import MatchPlayerStats from "./MatchPlayerStats";
 import "react-select/dist/react-select.css";
-
-
-const positionToPriority = {
-    "G": 0,
-    "D": 1,
-    "M": 2,
-    "F": 3
-};
-
-const sortByPosition = (p1, p2) => {
-    const p1Position = positionToPriority[p1.position];
-    const p2Position = positionToPriority[p2.position];
-
-    if (p1Position > p2Position) {
-        return 1;
-    } else if (p1Position < p2Position) {
-        return -1;
-    }
-    return 0;
-};
 
 export default class PlayerModal extends Component {
     constructor(props) {
