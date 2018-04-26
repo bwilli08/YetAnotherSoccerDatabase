@@ -10,37 +10,32 @@ import {
     Table,
     Container,
     Row,
-    Col
+    Col,
+    UncontrolledDropdown
 } from "reactstrap";
+import PlayerModal from "../components/PlayerModal";
 import Client from "../Client";
 import ToggleDisplay from "react-toggle-display";
 
 const DEFAULT_POSITION = "Any Position";
 const MATCHING_PLAYER_LIMIT = 25;
 
+const POSITIONS = [DEFAULT_POSITION, "Defender", "Midfielder", "Attacker"];
+
 class Players extends Component {
 
-    constructor(params) {
-        super(params);
-
-        this.toggleDropDown = this.toggleDropDown.bind(this);
+    constructor() {
+        super();
 
         this.state = {
-            dropdownOpen: false,
-
             activeSearchText: "",
             activeSearchPosition: "",
             displaySearchMessage: false,
             searchText: "",
             displayPlayers: false,
             players: [],
-            clubs: [],
             isPlayerSearching: false,
             position: DEFAULT_POSITION,
-
-            displayStats: false,
-            stats: [],
-            isStatsSearching: false
         };
     }
 
@@ -54,7 +49,7 @@ class Players extends Component {
         const player_name = this.state.searchText;
         const position = this.state.position;
 
-        if (!this.state.displayStats && player_name === this.state.activeSearchText && position === this.state.activeSearchPosition) {
+        if (player_name === this.state.activeSearchText && position === this.state.activeSearchPosition) {
             return;
         }
 
@@ -62,9 +57,7 @@ class Players extends Component {
             this.setState({
                 displaySearchMessage: false,
                 displayPlayers: true,
-                clubs: [],
-                isPlayerSearching: true,
-                displayStats: false
+                isPlayerSearching: true
             });
 
             Client.player_search(player_name, position === DEFAULT_POSITION ? "" : position, players => {
@@ -88,36 +81,20 @@ class Players extends Component {
         }
     };
 
-    getPlayerStats = (player) => {
+    setActivePlayer = (player) => {
         this.setState({
-            displayStats: true,
-            isStatsSearching: true,
-            players: [player]
-        });
-
-        Client.stat_search(player.player_id, stats => {
-            this.setState({
-                stats: stats,
-                isStatsSearching: false
-            });
-        });
-    };
-
-    toggleDropDown() {
-        this.setState({
-            dropdownOpen: !this.state.dropdownOpen
-        });
+            activePlayer: player
+        })
     };
 
     selectPosition = (event) => {
         this.setState({
-            dropdownOpen: !this.state.dropdownOpen,
             position: event.target.value
         });
     };
 
     render() {
-        const {players, stats} = this.state;
+        const {players, activePlayer} = this.state;
 
         const playerRows = players.map((player, idx) => (
             <tr key={idx}>
@@ -129,36 +106,17 @@ class Players extends Component {
                 <td className="right aligned">{player.player_height}</td>
                 <td className="right aligned">{player.player_weight}</td>
                 <td>
-                    <Button onClick={() => this.getPlayerStats(player)}>View Stats</Button>
+                    <Button onClick={() => this.setActivePlayer(player)}>View Stats</Button>
                 </td>
             </tr>
         ));
 
-        const statRows = stats.map((stat, idx) => {
-            var minutes = stat.minutes;
-            if (stat.apps > 0 && minutes === 0) {
-                minutes = "N/A";
-            }
-            return (
-                <tr key={idx}>
-                    <td className="right aligned">{stat.comp_name}</td>
-                    <td className="right aligned">{stat.year}</td>
-                    <td className="right aligned">{stat.country_name}</td>
-                    <td className="right aligned">{stat.club_name}</td>
-                    <td className="right aligned">{stat.apps}</td>
-                    <td className="right aligned">{stat.starts}</td>
-                    <td className="right aligned">{stat.subs}</td>
-                    <td className="right aligned">{minutes}</td>
-                    <td className="right aligned">{stat.goals}</td>
-                    <td className="right aligned">{stat.assists}</td>
-                    <td className="right aligned">{stat.yellows}</td>
-                    <td className="right aligned">{stat.double_yellows}</td>
-                    <td className="right aligned">{stat.reds}</td>
-                </tr>
-            )
-        });
         const showNoResultMessage = playerRows.length === 0 && this.state.displayPlayers && !this.state.isPlayerSearching;
         const showSearchTable = this.state.displayPlayers && !showNoResultMessage;
+
+        const dropdownItems = POSITIONS.map(pos =>
+            (<DropdownItem onClick={this.selectPosition}value={pos}>{pos}</DropdownItem>)
+        );
 
         return (
             <Container>
@@ -167,22 +125,14 @@ class Players extends Component {
                         <InputGroup>
                             <Input onKeyPress={this._handleKeyPress} onChange={this.handleTextChange}
                                    placeholder="Enter player name..."/>
-                            <InputGroupButtonDropdown addonType="append" isOpen={this.state.dropdownOpen}
-                                                      toggle={this.toggleDropDown}>
+                            <UncontrolledDropdown>
                                 <DropdownToggle caret>
                                     {this.state.position}
                                 </DropdownToggle>
                                 <DropdownMenu>
-                                    <DropdownItem onClick={this.selectPosition}
-                                                  value={DEFAULT_POSITION}>{DEFAULT_POSITION}</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition}
-                                                  value="Goalkeeper">Goalkeeper</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition} value="Defender">Defender</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition}
-                                                  value="Midfielder">Midfielder</DropdownItem>
-                                    <DropdownItem onClick={this.selectPosition} value="Attacker">Attacker</DropdownItem>
+                                    {dropdownItems}
                                 </DropdownMenu>
-                            </InputGroupButtonDropdown>
+                            </UncontrolledDropdown>
                             <Button onClick={this.handleSearch}>Search</Button>
                         </InputGroup>
                         <ToggleDisplay show={this.state.displaySearchMessage}>
@@ -213,31 +163,7 @@ class Players extends Component {
                                 </tbody>
                             </Table>
                         </ToggleDisplay>
-                        <ToggleDisplay show={this.state.displayStats}>
-                            <h4>Season Statistics</h4>
-                            <Table>
-                                <thead>
-                                <tr>
-                                    <th>Comp</th>
-                                    <th>Season</th>
-                                    <th>Country</th>
-                                    <th>Club</th>
-                                    <th>Apps</th>
-                                    <th>Starts</th>
-                                    <th>Subs</th>
-                                    <th>Minutes</th>
-                                    <th>Goals</th>
-                                    <th>Assists</th>
-                                    <th>Yellow</th>
-                                    <th>Double Yellow</th>
-                                    <th>Red</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {statRows}
-                                </tbody>
-                            </Table>
-                        </ToggleDisplay>
+                        <PlayerModal player={activePlayer} handler={() => this.setActivePlayer(null)}/>
                     </Col>
                 </Row>
             </Container>
