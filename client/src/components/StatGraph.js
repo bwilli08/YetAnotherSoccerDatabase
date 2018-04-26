@@ -73,10 +73,10 @@ export default class StatGraph extends Component {
             <div>
                 <ScatterChart width={500} height={400} margin={{top: 20, right: 20, bottom: 10, left: 10}}>
                     <XAxis type="number" dataKey="games" name="Games">
-                        <Label value="Games" offset={0} position="insideBottom" />
+                        <Label value="Games" offset={0} position="insideBottom"/>
                     </XAxis>
                     <YAxis type="number" dataKey="total" name="Goals">
-                        <Label value="Goals" offset={0} position="insideLeft" />
+                        <Label value="Goals" offset={0} position="insideLeft"/>
                     </YAxis>
                     <CartesianGrid />
                     <Scatter data={data} fill="#8884d8"/>

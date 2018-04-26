@@ -2,17 +2,19 @@ import React, {Component} from "react";
 import Client from "../Client";
 
 
-
 export default class Top10Tables extends Component {
 
     constructor(props) {
         super(props);
 
         this.state = {
-            numLoading: 4,
+            loading1: true,
             data1: [],
+            loading2: true,
             data2: [],
+            loading3: true,
             data3: [],
+            loading4: true,
             data4: []
         };
     }
@@ -26,7 +28,7 @@ export default class Top10Tables extends Component {
             const stat1 = isPlayer ? "goals" : "goals_for_total";
             Client.overview_search(type, stat1, order, year, res => {
                 this.setState({
-                    numLoading: this.state.numLoading - 1,
+                    loading1: false,
                     data1: res
                 })
             });
@@ -34,7 +36,7 @@ export default class Top10Tables extends Component {
             const stat2 = isPlayer ? "assists" : "goals_against_total";
             Client.overview_search(type, stat2, order, year, res => {
                 this.setState({
-                    numLoading: this.state.numLoading - 1,
+                    loading2: false,
                     data2: res
                 })
             });
@@ -42,7 +44,7 @@ export default class Top10Tables extends Component {
             const stat3 = isPlayer ? "yellow_cards" : "clean_sheet_total";
             Client.overview_search(type, stat3, order, year, res => {
                 this.setState({
-                    numLoading: this.state.numLoading - 1,
+                    loading3: false,
                     data3: res
                 })
             });
@@ -50,7 +52,7 @@ export default class Top10Tables extends Component {
             const stat4 = isPlayer ? "red_cards" : "failed_to_score_total";
             Client.overview_search(type, stat4, order, year, res => {
                 this.setState({
-                    numLoading: this.state.numLoading - 1,
+                    loading4: false,
                     data4: res
                 })
             });
@@ -59,6 +61,11 @@ export default class Top10Tables extends Component {
 
     getTable = (variable, isPlayer, dataName, header) => {
         const data = this.state[variable];
+        const isLoading = this.state[variable.replace("data", "loading")];
+
+        if (isLoading) {
+            return (<h5>Loading table...</h5>);
+        }
 
         const dataRows = data.map((data, idx) => (
             <tr key={idx}>
@@ -88,12 +95,6 @@ export default class Top10Tables extends Component {
     };
 
     render() {
-        const {numLoading} = this.state;
-
-        if (numLoading > 0) {
-            return (<div>Loading table data...</div>);
-        }
-
         const {type, order} = this.props;
 
         const isPlayer = type === "player";

@@ -2,7 +2,6 @@ import React, {Component} from "react";
 import Top10Tables from "../components/Top10Tables";
 import {Col, Container, Row} from "reactstrap";
 import ReactMarkdown from "react-markdown";
-import StatGraph from '../components/StatGraph';
 
 
 const introduction = `

@@ -1,18 +1,6 @@
 import React, {Component} from "react";
 import Client from "../Client";
-import {
-    TabContent,
-    TabPane,
-    NavLink,
-    Nav,
-    NavItem,
-    Button,
-    Modal,
-    ModalBody,
-    ModalHeader,
-    ModalFooter,
-    Table
-} from "reactstrap";
+import {Button, Modal, ModalBody, ModalHeader, ModalFooter} from "reactstrap";
 import "react-select/dist/react-select.css";
 
 export default class PlayerModal extends Component {

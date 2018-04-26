@@ -3,7 +3,6 @@ import {
     DropdownItem,
     DropdownMenu,
     DropdownToggle,
-    InputGroupButtonDropdown,
     Button,
     InputGroup,
     Input,
@@ -115,7 +114,7 @@ class Players extends Component {
         const showSearchTable = this.state.displayPlayers && !showNoResultMessage;
 
         const dropdownItems = POSITIONS.map(pos =>
-            (<DropdownItem onClick={this.selectPosition}value={pos}>{pos}</DropdownItem>)
+            (<DropdownItem onClick={this.selectPosition} value={pos}>{pos}</DropdownItem>)
         );
 
         return (
