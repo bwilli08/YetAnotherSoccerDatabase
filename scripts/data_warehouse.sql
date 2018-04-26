@@ -13,7 +13,8 @@ INSERT INTO PlayerStatsByYear
       (
         SELECT
           pg.player_id,
-          s.year,
+          REPLACE(s.year, '/', '') as year,
+          COUNT(*)                AS games,
           SUM(pg.goals_scored)    AS goals,
           SUM(pg.assists)         AS assists,
           SUM(pg.shots_on_goal)   AS shots_on_goal,
@@ -53,7 +54,8 @@ INSERT IGNORE INTO PlayerStatsByYear
       (
         SELECT
           ps.player_id,
-          s.year,
+          REPLACE(s.year, '/', '') as year,
+          SUM(appearances) + SUM(sub_apps)             AS games,
           SUM(ps.goals)        AS goals,
           SUM(ps.assists)      AS assists,
           0                    AS shots_on_goal,

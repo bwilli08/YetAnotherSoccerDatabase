@@ -214,8 +214,9 @@ CREATE TABLE PlayerGame (
 ##### Data Warehouse #####
 CREATE TABLE PlayerStatsByYear (
   player_id       INTEGER,
-  year            VARCHAR(12),
+  year            INTEGER,
 
+  games           INTEGER,
   goals           INTEGER,
   assists         INTEGER,
   shots_on_goal   INTEGER,
@@ -238,8 +239,5 @@ CREATE TABLE PlayerStatsByYear (
   name            VARCHAR(64),
 
   PRIMARY KEY (player_id, year),
-  FOREIGN KEY (player_id) REFERENCES Player (id),
-
-  INDEX (goals),
-  INDEX (assists)
+  FOREIGN KEY (player_id) REFERENCES Player (id)
 );

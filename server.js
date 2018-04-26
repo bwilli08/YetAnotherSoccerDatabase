@@ -170,6 +170,45 @@ app.get("/search/players", (req, res) => {
     });
 });
 
+app.get("/get/player-stats", (req, res) => {
+    const year = req.query.year;
+    const stat = req.query.stat;
+
+    if (!year) {
+        res.json({
+            error: "Missing required parameter `year`."
+        });
+        return;
+    }
+
+    if (!stat) {
+        res.json({
+            error: "Missing required parameter `stat`."
+        });
+        return;
+    }
+
+    const qry = `
+    SELECT *
+    FROM
+        (
+            SELECT player_id, games, ${stat} as total
+            FROM PlayerStatsByYear
+            WHERE year=${year.replace("/", "")}
+        ) stats,
+        (
+            SELECT id, nickname as name
+            FROM Player
+        ) p
+    WHERE stats.player_id=p.id`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
 app.get("/get/match-stats", (req, res) => {
     const match_id = req.query.match_id;
 
@@ -363,12 +402,10 @@ app.get("/top10/player", (req, res) => {
                 FROM PlayerStatsByYear `;
 
     if (year) {
-        qry = qry.concat(`WHERE year='${year}' `)
+        qry = qry.concat(`WHERE year=${year.replace("/", "")} `)
     }
 
     qry = qry.concat(`GROUP BY player_id ORDER BY total ${order} LIMIT 10`);
-
-    console.log(qry);
 
     db.query(qry, function (err, result) {
         if (err) throw err;
