@@ -2,7 +2,7 @@ import React, {Component} from "react";
 import Top10Tables from "../components/Top10Tables";
 import {Col, Container, Row} from "reactstrap";
 import ReactMarkdown from "react-markdown";
-import Plot from 'react-plotly.js';
+import StatGraph from '../components/StatGraph';
 
 
 const introduction = `
@@ -23,19 +23,6 @@ export default class HomePage extends Component {
                     </Col>
                     <Col>
                         <ReactMarkdown source={introduction}/>
-                        <Plot
-                            data={[
-                                {
-                                    x: [1, 2, 3],
-                                    y: [2, 6, 3],
-                                    type: 'scatter',
-                                    mode: 'lines+points',
-                                    marker: {color: 'red'},
-                                },
-                                {type: 'bar', x: [1, 2, 3], y: [2, 5, 3]},
-                            ]}
-                            layout={ {width: 320, height: 240, title: 'A Fancy Plot'} }
-                        />
                     </Col>
                     <Col md="3">
                         <h4>2017/18 Club Stats</h4>

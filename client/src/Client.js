@@ -67,8 +67,8 @@ function seasons(cb) {
     return json_query("/seasons", cb);
 }
 
-function player_graph_data(cb) {
-    return json_query("/get/player-stats", cb);
+function player_graph_data(stat, year, cb) {
+    return json_query(`/get/player-stats?stat=${stat}&year=${year}`, cb);
 }
 
 function json_query(qry, cb) {
@@ -128,6 +128,7 @@ const Client = {
     player_search,
     stat_search,
     club_search_with_name,
-    seasons
+    seasons,
+    player_graph_data
 };
 export default Client;

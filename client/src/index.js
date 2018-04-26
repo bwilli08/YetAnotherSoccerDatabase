@@ -44,7 +44,6 @@ const Header = () => (
 const Footer = () => (
     <footer>
         <Container fluid>
-            Test
         </Container>
     </footer>
 );
