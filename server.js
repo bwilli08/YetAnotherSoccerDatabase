@@ -200,7 +200,8 @@ app.get("/get/player-stats", (req, res) => {
             SELECT id, nickname as name
             FROM Player
         ) p
-    WHERE stats.player_id=p.id`;
+    WHERE stats.player_id=p.id
+    ORDER BY stats.total DESC`;
 
     db.query(qry, function (err, result) {
         if (err) throw err;

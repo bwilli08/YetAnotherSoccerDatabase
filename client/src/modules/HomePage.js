@@ -2,7 +2,7 @@ import React, {Component} from "react";
 import Top10Tables from "../components/Top10Tables";
 import {Col, Container, Row} from "reactstrap";
 import ReactMarkdown from "react-markdown";
-
+import OverallTable from "../components/OverallTable";
 
 const introduction = `
 ### Introduction
@@ -22,6 +22,8 @@ export default class HomePage extends Component {
                     </Col>
                     <Col>
                         <ReactMarkdown source={introduction}/>
+                        <hr/>
+                        <OverallTable/>
                     </Col>
                     <Col md="3">
                         <h4>2017/18 Club Stats</h4>
@@ -31,5 +33,4 @@ export default class HomePage extends Component {
             </Container>
         );
     }
-
 }
