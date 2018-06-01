@@ -141,6 +141,24 @@ CREATE TABLE PlayerSeason (
   yellow_red     INTEGER,
   red_cards      INTEGER,
 
+  # These stats are all backfilled using the PlayerGame table.
+  goals_conceded   INTEGER,
+  shots_on_goal    INTEGER,
+  shots_total      INTEGER,
+  fouls_committed  INTEGER,
+  fouls_drawn      INTEGER,
+  interceptions    INTEGER,
+  saves            INTEGER,
+  clearances       INTEGER,
+  tackles          INTEGER,
+  offsides         INTEGER,
+  blocks           INTEGER,
+  pen_saved        INTEGER,
+  pen_missed       INTEGER,
+  pen_scored       INTEGER,
+  passes_total     INTEGER,
+  crosses_total    INTEGER,
+
   PRIMARY KEY (player_id, season_id, club_id),
   FOREIGN KEY (player_id) REFERENCES Player (id),
   FOREIGN KEY (season_id, club_id) REFERENCES ClubSeason (season_id, club_id),
@@ -241,3 +259,117 @@ CREATE TABLE PlayerStatsByYear (
   PRIMARY KEY (player_id, year),
   FOREIGN KEY (player_id) REFERENCES Player (id)
 );
+
+##### Temporary Tables #####
+CREATE TABLE TemporaryPlayerSeason (
+  player_id      INTEGER,
+  season_id      INTEGER,
+  club_id        INTEGER,
+
+  # These stats are all backfilled using the PlayerGame table.
+  goals_conceded   INTEGER,
+  shots_on_goal    INTEGER,
+  shots_total      INTEGER,
+  fouls_committed  INTEGER,
+  fouls_drawn      INTEGER,
+  interceptions    INTEGER,
+  saves            INTEGER,
+  clearances       INTEGER,
+  tackles          INTEGER,
+  offsides         INTEGER,
+  blocks           INTEGER,
+  pen_saved        INTEGER,
+  pen_missed       INTEGER,
+  pen_scored       INTEGER,
+  passes_total     INTEGER,
+  crosses_total    INTEGER,
+
+  PRIMARY KEY (player_id, season_id, club_id),
+  FOREIGN KEY (player_id) REFERENCES Player (id),
+  FOREIGN KEY (season_id, club_id) REFERENCES ClubSeason (season_id, club_id)
+);
+
+SELECT player_id, season_id, club_id,
+  SUM(goals_conceded) as goals_conceded,
+  SUM(shots_on_goal) as shots_on_goal,
+  SUM(shots_total) as shots_total,
+  SUM(fouls_committed) as fouls_committed,
+  SUM(fouls_drawn) as fouls_drawn,
+  SUM(interceptions) as interceptions,
+  SUM(saves) as saves,
+  SUM(clearances) as clearances,
+  SUM(tackles) as tackles,
+  SUM(offsides) as offsides,
+  SUM(blocks) as blocks,
+  SUM(pen_saved) as pen_saved,
+  SUM(pen_missed) as pen_missed,
+  SUM(pen_scored) as pen_scored,
+  SUM(passes_total) as passes_total,
+  SUM(crosses_total) as crosses_total
+FROM PlayerGame GROUP BY player_id, season_id, club_id;
+
+CREATE TABLE LineupStats (
+  fixture_id       INTEGER,
+  club_id          INTEGER,
+
+  # These stats are all backfilled using the PlayerGame table.
+  minutes_played   INTEGER,
+  appearances      INTEGER,
+  goals            INTEGER,
+  goals_conceded   INTEGER,
+  assists          INTEGER,
+  shots_on_goal    INTEGER,
+  shots_total      INTEGER,
+  fouls_committed  INTEGER,
+  fouls_drawn      INTEGER,
+  interceptions    INTEGER,
+  saves            INTEGER,
+  clearances       INTEGER,
+  tackles          INTEGER,
+  offsides         INTEGER,
+  blocks           INTEGER,
+  pen_saved        INTEGER,
+  pen_missed       INTEGER,
+  pen_scored       INTEGER,
+  passes_total     INTEGER,
+  crosses_total    INTEGER,
+
+  PRIMARY KEY (fixture_id, club_id),
+  FOREIGN KEY (fixture_id) REFERENCES Fixture (id),
+  FOREIGN KEY (club_id) REFERENCES Club (id)
+);
+
+INSERT INTO LineupStats
+SELECT p.fixture_id, p.club_id,
+SUM(minutes_played) as minutes_played,
+SUM(appearances) as appearances,
+SUM(goals) as goals,
+SUM(goals_conceded) as goals_conceded,
+SUM(assists) as assists,
+SUM(shots_on_goal) as shots_on_goal,
+SUM(shots_total) as shots_total,
+SUM(fouls_committed) as fouls_committed,
+SUM(fouls_drawn) as fouls_drawn,
+SUM(interceptions) as interceptions,
+SUM(saves) as saves,
+SUM(clearances) as clearances,
+SUM(tackles) as tackles,
+SUM(offsides) as offsides,
+SUM(blocks) as blocks,
+SUM(pen_saved) as pen_saved,
+SUM(pen_missed) as pen_missed,
+SUM(pen_scored) as pen_scored,
+SUM(passes_total) as passes_total,
+SUM(crosses_total) as crosses_total
+FROM (SELECT f.id as fixture_id,
+          player_id,
+          pg.season_id,
+          club_id
+      FROM Fixture f, playergame pg
+      WHERE f.id=pg.fixture_id
+      ) p,
+      playerseason ps
+WHERE p.player_id=ps.player_id
+    AND p.season_id=ps.season_id
+    AND p.club_id=ps.club_id
+GROUP BY p.fixture_id, p.club_id;
