@@ -21,6 +21,10 @@ function match_lineup(match_id, cb) {
     return json_query(`/get/lineup?match_id=${match_id}`, cb);
 }
 
+function season_lineup(season_id, club_id, cb) {
+    return json_query(`/get/lineup?season_id=${season_id}&club_id=${club_id}`, cb);
+}
+
 function club_match_search(club1, club2, cb) {
     const club1param = `&club1=${club1}`;
     var club2param = "";

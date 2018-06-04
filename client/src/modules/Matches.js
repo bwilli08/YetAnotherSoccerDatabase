@@ -1,7 +1,9 @@
 import React, {Component} from "react";
-import {Button, Table, Container, Row, Col} from "reactstrap";
-import Select from "react-select";
+import {Button, Table, Container, Row, Col, DropdownItem} from "reactstrap";
 import "react-select/dist/react-select.css";
+import "react-virtualized/styles.css";
+import "react-virtualized-select/styles.css";
+import Select from "react-virtualized-select";
 import ToggleDisplay from "react-toggle-display";
 import {clubs, find_club_by_id} from "../util/ClubFunctions";
 import MatchStatModal from "../components/MatchStatModal";
@@ -33,26 +35,28 @@ export default class Matches extends Component {
         })
     };
 
-    handleChange = (selectedOption) => {
-        if (this.state.rSelected === 1) {
-            this.setState({
-                rSelected: 2,
-                club1: selectedOption
-            });
-        } else {
-            this.setState({
-                rSelected: 1,
-                club2: selectedOption
-            });
-        }
+    selectOption = (selectedOption, selectFunc) => {
+        const nextRSelected = this.state.rSelected === 1 ? 2 : 1;
+        const stateAttribute = this.state.rSelected === 1 ? "club1" : "club2";
+
+        this.setState({
+            rSelected: nextRSelected,
+            [stateAttribute]: selectedOption
+        }, () => selectFunc(selectedOption));
     };
 
     filterOption = (option, inputString) => {
         return option.name.toLowerCase().includes(inputString.toLowerCase());
     };
 
-    renderOption = (option) => {
-        return option.name;
+    renderOption = ({key, style, option, selectValue}) => {
+        const {name} = option;
+
+        return (
+            <DropdownItem id={key} style={style} onClick={() => this.selectOption(option, selectValue)}>
+                {name}
+            </DropdownItem>
+        );
     };
 
     onRadioButtonClick = (target) => {
@@ -87,8 +91,7 @@ export default class Matches extends Component {
     };
 
     render() {
-        const {selectedOption, matches, activeMatch} = this.state;
-        const name = selectedOption && selectedOption.name;
+        const {matches, activeMatch} = this.state;
 
         const team1String = this.state.club1 ? this.state.club1.name : "Team 1";
         const team2String = this.state.club2 ? this.state.club2.name : "Team 2";
@@ -122,14 +125,9 @@ export default class Matches extends Component {
                             <Col xs="5">
                                 <Select
                                     searchPromptText={searchPromptText}
-                                    name="form-field-name"
-                                    value={name}
-                                    valueRenderer={this.renderOption}
                                     optionRenderer={this.renderOption}
                                     filterOption={this.filterOption}
-                                    onChange={this.handleChange}
                                     options={clubs}
-                                    matchPos="any"
                                 />
                             </Col>
                             <Col xs="2">

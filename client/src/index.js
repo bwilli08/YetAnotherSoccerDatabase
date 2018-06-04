@@ -1,16 +1,21 @@
+import "react-select/dist/react-select.css";
+import "react-virtualized/styles.css";
+import "react-virtualized-select/styles.css";
+import "./stylesheets/index.css";
+import "bootstrap/dist/css/bootstrap.css";
+import "react-bootstrap-table/css/react-bootstrap-table.css";
+import "react-bootstrap-table/dist/react-bootstrap-table-all.min.css";
+
 import React from "react";
 import ReactDOM from "react-dom";
-import "./stylesheets/index.css";
 import HomePage from "./modules/HomePage";
 import About from "./modules/About";
 import Clubs from "./modules/Clubs";
 import Matches from "./modules/Matches";
 import Players from "./modules/Players";
+import Predictions from "./modules/Predictions";
 import {BrowserRouter, Redirect, Route, Link, Switch} from "react-router-dom";
 import registerServiceWorker from "./registerServiceWorker";
-import "bootstrap/dist/css/bootstrap.css";
-import "react-bootstrap-table/css/react-bootstrap-table.css";
-import "react-bootstrap-table/dist/react-bootstrap-table-all.min.css";
 import {Container, Navbar, NavbarBrand, Nav, NavLink, NavItem, Jumbotron} from "reactstrap";
 
 const Header = () => (
@@ -32,6 +37,9 @@ const Header = () => (
                 </NavItem>
                 <NavItem>
                     <NavLink tag={Link} to="/players">Players</NavLink>
+                </NavItem>
+                <NavItem>
+                    <NavLink tag={Link} to="/predictions">Predictions</NavLink>
                 </NavItem>
             </Nav>
         </Navbar>
@@ -58,6 +66,7 @@ ReactDOM.render((
                 <Route path="/clubs" component={Clubs}/>
                 <Route path="/matches" component={Matches}/>
                 <Route path="/players" component={Players}/>
+                <Route path="/predictions" component={Predictions}/>
                 <Redirect from="/" to="/home"/>
             </Switch>
             <Footer/>

@@ -252,26 +252,37 @@ app.get("/get/match-stats", (req, res) => {
 
 app.get("/get/lineup", (req, res) => {
     const match_id = req.query.match_id;
+    const season_id = req.query.season_id;
+    const club_id = req.query.club_id;
 
-    if (!match_id) {
-        res.json({
-            error: "Missing required parameter `match_id`."
+    if (match_id) {
+        const qry = `
+            SELECT *
+            FROM
+                (SELECT * FROM PlayerGame WHERE fixture_id = ${match_id}) lineup,
+                Player p
+            WHERE lineup.player_id = p.id`;
+
+        db.query(qry, function (err, result) {
+            if (err) throw err;
+
+            res.json(result);
         });
-        return;
+    } else {
+        const qry = `
+            SELECT * FROM 
+                (SELECT player_id
+                FROM PlayerSeason
+                WHERE club_id=${club_id} AND season_id=${season_id}) lineup,
+                Player p
+            WHERE p.id=lineup.player_id`;
+
+        db.query(qry, function (err, result) {
+            if (err) throw err;
+
+            res.json(result);
+        });
     }
-
-    const qry = `
-    SELECT *
-    FROM
-        (SELECT * FROM PlayerGame WHERE fixture_id = ${match_id}) lineup,
-        Player p
-    WHERE lineup.player_id = p.id`;
-
-    db.query(qry, function (err, result) {
-        if (err) throw err;
-
-        res.json(result);
-    });
 });
 
 app.get("/search/matches", (req, res) => {
@@ -462,7 +473,7 @@ app.get("/top10/club", (req, res) => {
 });
 
 app.get("/readme", (req, res) => {
-    fs.readFile("./README.md", {encoding: 'utf-8'}, function(err,data){
+    fs.readFile("./README.md", {encoding: 'utf-8'}, function (err, data) {
         if (!err) {
             res.writeHead(200, {'Content-Type': 'text/plain'});
             res.end(data);
