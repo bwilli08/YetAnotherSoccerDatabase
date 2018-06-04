@@ -6,3 +6,5 @@ internal/*
 internal/.*
 *__pycache__*
 *.iml
+.ipynb_checkpoints/
+*.ipynb
