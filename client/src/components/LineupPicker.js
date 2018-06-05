@@ -34,16 +34,58 @@ export default class LineupPicker extends Component {
         this.state = {
             selectedClub: null,
             availablePlayers: [],
-            selectedPlayers: []
+            selectedPlayers: [],
+            isValidLineup: false
         };
     }
+
+    componentWillReceiveProps(nextProps) {
+        const {clubs} = nextProps;
+
+        if (clubs !== this.props.clubs) {
+            this.updateState({
+                selectedClub: null,
+                availablePlayers: [],
+                selectedPlayers: []
+            });
+        }
+    }
+
+    updateState = (newState) => {
+        this.setState(newState, () => {
+            const {selectedPlayers} = this.state;
+
+            let isValidLineup = false;
+            if (selectedPlayers.length === REQUIRED_PLAYERS) {
+                isValidLineup = true;
+
+                Object.keys(POSITION_LIMITS).forEach((key) => {
+                    const minimum = POSITION_LIMITS[key][MIN];
+
+                    isValidLineup &= (selectedPlayers.filter(player => player.position === key).length >= minimum);
+                });
+            }
+
+            this.setState({
+                isValidLineup: isValidLineup
+            }, () => {
+                const {callback} = this.props;
+                const {isValidLineup, selectedClub, selectedPlayers} = this.state;
+
+                const club_id = selectedClub === null ? null : selectedClub.id;
+                const player_ids = selectedPlayers.map(player => player.id);
+
+                callback(isValidLineup, club_id, player_ids);
+            })
+        })
+    };
 
     selectOption = (selectedOption, selectFunc) => {
         const {activeSeason} = this.props;
 
-        this.setState({
+        this.updateState({
             selectedClub: selectedOption,
-            selectedLineup: []
+            selectedPlayers: []
         });
 
         if (selectedOption !== null) {
@@ -80,7 +122,7 @@ export default class LineupPicker extends Component {
             newSelectedPlayers = selectedPlayers.concat([player]);
         }
 
-        this.setState({
+        this.updateState({
             selectedPlayers: newSelectedPlayers
         });
     };
