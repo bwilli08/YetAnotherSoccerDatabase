@@ -9,6 +9,14 @@ function club_search_with_name(club, cb) {
     return json_query(`/search/clubs${params}`, cb);
 }
 
+function get_seasons(cb) {
+    return json_query("/get/seasons", cb);
+}
+
+function clubs_for_season(season_id, cb) {
+    return json_query(`/search/clubs?season_id=${season_id}`, cb);
+}
+
 function get_readme(cb) {
     return text_query("/readme", cb);
 }
@@ -133,6 +141,9 @@ const Client = {
     stat_search,
     club_search_with_name,
     seasons,
-    player_graph_data
+    player_graph_data,
+    season_lineup,
+    get_seasons,
+    clubs_for_season
 };
 export default Client;

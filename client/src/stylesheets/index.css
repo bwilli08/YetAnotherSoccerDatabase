@@ -7,6 +7,11 @@
     box-sizing: border-box;
 }
 
+.dropdown-menu {
+    max-height: 400px;
+    overflow: scroll;
+}
+
 html,
 body {
     height: 100%;

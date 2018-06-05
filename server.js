@@ -20,6 +20,22 @@ if (process.env.NODE_ENV === "production") {
     app.use(express.static("client/build"));
 }
 
+app.get("/get/seasons", (req, res) => {
+    const qry =
+        `select s.*, c.name, country.name as country
+         FROM Season s,
+            Competition c,
+            Country country
+         WHERE s.league_id=c.id AND c.id!=0 AND s.year in ('2016/2017', '2017/2018') AND c.country_id=country.id
+         ORDER BY s.year DESC, c.name ASC`;
+
+    db.query(qry, function (err, result) {
+        if (err) throw err;
+
+        res.json(result);
+    });
+});
+
 app.get("/search/club-season", (req, res) => {
     const club_id = req.query.club_id;
 
@@ -96,11 +112,10 @@ app.get("/search/player-season", (req, res) => {
 
 app.get("/search/clubs", (req, res) => {
     const name = req.query.name;
+    const season_id = req.query.season_id;
 
     var qry;
-    if (!name) {
-        qry = "SELECT * FROM Club club";
-    } else {
+    if (name) {
         qry =
             `SELECT
                 club.id as club_id,
@@ -117,6 +132,13 @@ app.get("/search/clubs", (req, res) => {
                 Country country ON club.country_id = country.id
                     JOIN
                 Venue venue ON club.venue_id = venue.id`;
+    } else if (season_id) {
+        qry = `SELECT *
+               FROM (SELECT * FROM ClubSeason WHERE season_id = ${season_id}) league
+                    JOIN
+               Club club ON league.club_id=club.id`;
+    } else {
+        qry = "SELECT * FROM Club club";
     }
 
     qry = qry.concat(" ORDER BY club.name ASC");
@@ -270,12 +292,13 @@ app.get("/get/lineup", (req, res) => {
         });
     } else {
         const qry = `
-            SELECT * FROM 
+            SELECT p.id, p.nickname, p.nationality, pos.position FROM
                 (SELECT player_id
                 FROM PlayerSeason
                 WHERE club_id=${club_id} AND season_id=${season_id}) lineup,
-                Player p
-            WHERE p.id=lineup.player_id`;
+                Player p,
+                (SELECT id, name as position FROM Position) pos
+            WHERE p.id=lineup.player_id AND p.position_id=pos.id`;
 
         db.query(qry, function (err, result) {
             if (err) throw err;

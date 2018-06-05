@@ -78,12 +78,12 @@ export default class OverallTable extends Component {
     render() {
         const {stat, year, playerStats} = this.state;
 
-        const statItems = STATS.map(stat =>
-            (<DropdownItem onClick={() => this.selectStat(stat)} value={stat}>{stat}</DropdownItem>)
+        const statItems = STATS.map((stat, idx) =>
+            (<DropdownItem key={"stat-" + idx} onClick={() => this.selectStat(stat)} value={stat}>{stat}</DropdownItem>)
         );
 
-        const yearItems = YEARS.map(year =>
-            (<DropdownItem onClick={() => this.selectYear(year)} value={year}>{year}</DropdownItem>)
+        const yearItems = YEARS.map((year, idx) =>
+            (<DropdownItem key={"year-" + idx} onClick={() => this.selectYear(year)} value={year}>{year}</DropdownItem>)
         );
 
         const options = {
