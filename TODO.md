@@ -1,9 +1,8 @@
 ## Next Time
 * Update LineupPicker component:
   * Display each players stats for that season to give the user some idea of which players are best (?)
-* Update Prediction page to call out to a setup python neural network that predicts the outcome of a match.
-  * Predicted Match Outcomes with Probabilities
-  * Top 3/5 Predicted Scorelines
+* Update Prediction page:
+  * Make the prediction outcome look prettier.
 * Make footer with actual information and a colored background.
 
 * For Neural Network:
