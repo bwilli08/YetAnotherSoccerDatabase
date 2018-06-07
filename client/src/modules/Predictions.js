@@ -17,7 +17,11 @@ class Predictions extends Component {
             home_club: null,
             away_is_valid: false,
             away_players: [],
-            away_club: null
+            away_club: null,
+            can_predict: false,
+            outcome: null,
+            score: null,
+            running_prediction: false
         }
     }
 
@@ -43,28 +47,62 @@ class Predictions extends Component {
             [valid_attribute]: isValid,
             [player_attribute]: player_ids,
             [club_attribute]: club_id
+        }, () => {
+            this.setState({
+                can_predict: this.state.activeSeason && this.state.home_is_valid && this.state.away_is_valid
+            })
         })
     };
 
     predictOutcome = () => {
-        const {home_is_valid, away_is_valid} = this.state;
+        const {activeSeason, home_club, home_players, away_club, away_players} = this.state;
 
-        console.log(home_is_valid);
-        console.log(away_is_valid);
+        console.log(activeSeason);
+        console.log(home_club);
+        console.log(home_players);
+        console.log(away_club);
+        console.log(away_players);
 
-        if (home_is_valid && away_is_valid) {
-            const {activeSeason, home_players, home_club, away_players, away_club} = this.state;
+        this.setState({
+            running_prediction: true
+        });
 
-            console.log(activeSeason);
-            console.log(home_players);
-            console.log(home_club);
-            console.log(away_players);
-            console.log(away_club);
+        Client.predict(activeSeason.id, home_club, home_players, away_club, away_players, (res) => {
+            this.setState({
+                outcome: res.outcome,
+                score: res.score,
+                running_prediction: false
+            })
+        });
+    };
+
+    scorePredictionComponent = () => {
+        const {outcome, score, running_prediction} = this.state;
+
+        if (running_prediction) {
+            return [
+                <Row style={{"text-align": "center"}}>
+                    <h5>Running prediction analysis...</h5>
+                    <div className="loader"/>
+                </Row>,
+                <hr/>
+            ];
+        } else if (outcome === null || score === null) {
+            return "";
+        } else {
+            return [
+                <Row style={{"text-align": "center"}}>
+                    <h4>Home Win: {outcome[0]} - Draw: {outcome[1]} - Away Win: {outcome[2]}</h4>
+                    <br/>
+                    <h5>Most Likely Score: {score[0]}-{score[1]} ({score[2]}%)</h5>
+                </Row>,
+                <hr/>
+            ];
         }
     };
 
     render() {
-        const {activeSeason, seasonClubs} = this.state;
+        const {activeSeason, seasonClubs, can_predict} = this.state;
 
         const season_rows = prediction_seasons.map((season, idx) => (
             <DropdownItem key={idx}
@@ -93,10 +131,11 @@ class Predictions extends Component {
                         </UncontrolledDropdown>
                     </Col>
                     <Col>
-                        <Button onClick={this.predictOutcome}>Predict Outcome</Button>
+                        <Button disabled={!can_predict} onClick={this.predictOutcome}>Predict Outcome</Button>
                     </Col>
                 </Row>
                 <hr/>
+                {this.scorePredictionComponent()}
                 <Row>
                     <Col>
                         <LineupPicker placeholder="Select a Home Team..."

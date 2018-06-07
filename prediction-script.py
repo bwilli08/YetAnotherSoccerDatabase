@@ -84,17 +84,10 @@ def player_rename(attribute):
 player_attribute_string = ", ".join(list(map(player_rename, player_attributes)))
 
 lineup_query_format =  "SELECT %s \
-                        FROM (SELECT pg.player_id, \
-                                  pg.season_id, \
-                                  pg.club_id \
-                              FROM PlayerGame pg \
-                              WHERE pg.season_id=%s \
-                                AND pg.club_id=%s \
-                                AND pg.player_id in (%s)) p, \
-                              playerseason ps \
-                        WHERE p.player_id=ps.player_id \
-                            AND p.season_id=ps.season_id \
-                            AND p.club_id=ps.club_id"
+                        FROM playerseason \
+                        WHERE season_id=%s \
+                            AND club_id=%s \
+                            AND player_id in (%s)"
 
 def getSeasonStatsForLineup(season_id, club_id, player_ids):
     player_id_string = ", ".join(map(str, player_ids))
@@ -114,17 +107,8 @@ def getNeuralNetworkInput(season_id, home_club_id, home_player_ids, away_club_id
     nn_input = nn_input + getSeasonStatsForLineup(season_id, away_club_id, away_player_ids)
     return nn_input
 
-def reduceProbabilityResults(x, y):
-    result = []
-
-    for idx, _ in enumerate(x):
-        result.append(x[idx] + y[idx])
-
-    return tuple(result)
-
-def getProbabilities(X, Y, nn_input, n1, n2):
+def getProbabilities(X, Y, nn_input):
     predictions = []
-    loops = 3
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -134,24 +118,17 @@ def getProbabilities(X, Y, nn_input, n1, n2):
         X_std = scaler.transform(X)
         nn_input_std = scaler.transform([nn_input])
 
-        for _ in range(0, loops, 1):
-            model = MLPClassifier(max_iter=500, hidden_layer_sizes=(n1, n2))
-            model.fit(X_std, Y)
-            predictions.append(model.predict_proba(nn_input_std)[0])
-
-    result = reduce(reduceProbabilityResults, predictions)
-    return list(map(lambda x: x / loops, result))
+        model = MLPClassifier(max_iter=500, hidden_layer_sizes=(7, 9), random_state=1)
+        model.fit(X_std, Y)
+        return model.predict_proba(nn_input_std)[0]
 
 
 def getOutcomeProbabilities(X, Y, nn_input):
-    return getProbabilities(X, Y, nn_input, 11, 13)
-
-def getScoreProbability(X, Y, nn_input):
-    return getProbabilities(X, Y, nn_input, 7, 8)
+    return getProbabilities(X, Y, nn_input)
 
 def getMostProbableScore(X, Y, nn_input):
-    home_probas = getScoreProbability(X, np.array(Y['Home_Result'].values), nn_input)
-    away_probas = getScoreProbability(X, np.array(Y['Away_Result'].values), nn_input)
+    home_probas = getOutcomeProbabilities(X, np.array(Y['Home_Result'].values), nn_input)
+    away_probas = getOutcomeProbabilities(X, np.array(Y['Away_Result'].values), nn_input)
 
     probability = [[], [], [], [], [], []]
 
@@ -161,7 +138,7 @@ def getMostProbableScore(X, Y, nn_input):
 
     matrix = np.asmatrix(probability)
     result = list(np.unravel_index(np.argmax(matrix, axis=None), matrix.shape))
-    result.append(np.max(matrix, axis=None))
+    result.append(float("{:.2f}".format(np.max(matrix, axis=None) * 100)))
     return result
 
 def parseListArg(arg):
@@ -177,8 +154,9 @@ away_players = parseListArg(sys.argv[5])
 
 nn_input = getNeuralNetworkInput(season_id, home_club_id, home_players, away_club_id, away_players)
 
+# Convert to list and round decimals
 outcome_probs = getOutcomeProbabilities(X, outcome_Y, nn_input)
-print(outcome_probs)
+print(list(map((lambda x: float("{:.2f}".format(x * 100))), outcome_probs)))
 
 likely_score = getMostProbableScore(X, score_Y, nn_input)
 print(likely_score)

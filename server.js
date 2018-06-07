@@ -1,3 +1,4 @@
+const spawn = require('child_process').spawn;
 const express = require("express");
 const fs = require("fs");
 const mysql = require("mysql");
@@ -491,6 +492,35 @@ app.get("/top10/club", (req, res) => {
     db.query(qry, function (err, result) {
         if (err) throw err;
 
+        res.json(result);
+    });
+});
+
+app.get("/predict", (req, res) => {
+    const season_id = req.query.season_id;
+    const home_club_id = req.query.home_club_id;
+    const home_players = req.query.home_players;
+    const away_club_id = req.query.away_club_id;
+    const away_players = req.query.away_players;
+
+    const proc = spawn('python3', ["prediction-script.py", season_id, home_club_id, home_players, away_club_id, away_players]);
+
+    let result;
+
+    proc.stdout.on('data', (data) => {
+        const dataArray = data.toString().split("\n");
+
+        const outcomeProbabilities = JSON.parse(dataArray[0]);
+        const likelyScore = JSON.parse(dataArray[1]);
+
+        result = {"outcome": outcomeProbabilities, "score": likelyScore};
+    });
+
+    proc.stderr.on('data', (data) => {
+        console.log(`stderr: ${data}`);
+    });
+
+    proc.on('close', (code) => {
         res.json(result);
     });
 });

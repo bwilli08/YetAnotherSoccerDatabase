@@ -83,6 +83,18 @@ function player_graph_data(stat, year, cb) {
     return json_query(`/get/player-stats?stat=${stat}&year=${year}`, cb);
 }
 
+function predict(season_id, home_club_id, home_players, away_club_id, away_players, cb) {
+    const params = [
+        `season_id=${season_id}`,
+        `home_club_id=${home_club_id}`,
+        `home_players=${home_players.join()}`,
+        `away_club_id=${away_club_id}`,
+        `away_players=${away_players.join()}`
+    ];
+
+    return json_query(`/predict?${params.join('&')}`, cb)
+}
+
 function json_query(qry, cb) {
     const type = {
         accept: "application/json",
@@ -144,6 +156,7 @@ const Client = {
     player_graph_data,
     season_lineup,
     get_seasons,
-    clubs_for_season
+    clubs_for_season,
+    predict
 };
 export default Client;
