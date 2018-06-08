@@ -128,7 +128,7 @@ def getNeuralNetworkInput(season_id, home_club_id, home_player_ids, away_club_id
 # Predicts the likelihood that each possible output occurs.
 #
 # Output: list of probabilities
-def getProbabilities(X, Y, nn_input):
+def getProbabilities(X, Y, hidden_layers, nn_input):
     predictions = []
 
     with warnings.catch_warnings():
@@ -139,7 +139,7 @@ def getProbabilities(X, Y, nn_input):
         X_std = scaler.transform(X)
         nn_input_std = scaler.transform([nn_input])
 
-        model = MLPClassifier(max_iter=500, hidden_layer_sizes=(7, 9), random_state=1)
+        model = MLPClassifier(max_iter=500, hidden_layer_sizes=hidden_layers, random_state=1)
         model.fit(X_std, Y)
         return model.predict_proba(nn_input_std)[0]
 
@@ -148,8 +148,8 @@ def getProbabilities(X, Y, nn_input):
 #
 # Output: [(home_score, away_score), likelihood]
 def getMostProbableScore(X, Y, nn_input):
-    home_probas = getProbabilities(X, np.array(Y['Home_Result'].values), nn_input)
-    away_probas = getProbabilities(X, np.array(Y['Away_Result'].values), nn_input)
+    home_probas = getProbabilities(X, np.array(Y['Home_Result'].values), (6), nn_input)
+    away_probas = getProbabilities(X, np.array(Y['Away_Result'].values), (6), nn_input)
 
     probability = [[], [], [], [], [], []]
 
@@ -186,7 +186,7 @@ nn_input = getNeuralNetworkInput(season_id, home_club_id, home_players, away_clu
 # Convert to list and round decimals
 #
 # Output: [home_win_probability, draw_probability, away_win_probability]
-outcome_probs = getProbabilities(X, outcome_Y, nn_input)
+outcome_probs = getProbabilities(X, outcome_Y, (9, 8), nn_input)
 print(list(map((lambda x: float("{:.2f}".format(x * 100))), outcome_probs)))
 
 # Determines most likely scoreline.
