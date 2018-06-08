@@ -1,6 +1,6 @@
 import React, {Component} from "react";
 import Client from "../Client";
-import {DropdownItem, DropdownMenu, DropdownToggle, Container, Row, Col, UncontrolledDropdown} from "reactstrap";
+import {Col, Container, DropdownItem, DropdownMenu, DropdownToggle, Row, UncontrolledDropdown} from "reactstrap";
 import {BootstrapTable, TableHeaderColumn} from "react-bootstrap-table";
 import "../../node_modules/react-bootstrap-table/dist/react-bootstrap-table-all.min.css";
 
@@ -41,6 +41,24 @@ const YEARS = [
 
 export default class OverallTable extends Component {
 
+    updateStats = () => {
+        const {stat, year} = this.state;
+
+        this.setState({
+            playerStats: [],
+        }, () => Client.player_graph_data(stat, year, res => {
+            this.setState({
+                playerStats: res
+            })
+        }))
+    };
+    selectStat = (stat) => {
+        this.setState({stat}, this.updateStats)
+    };
+    selectYear = (year) => {
+        this.setState({year}, this.updateStats)
+    };
+
     constructor(props) {
         super(props);
 
@@ -54,26 +72,6 @@ export default class OverallTable extends Component {
     componentDidMount() {
         this.updateStats();
     }
-
-    updateStats = () => {
-        const {stat, year} = this.state;
-
-        this.setState({
-            playerStats: [],
-        }, () => Client.player_graph_data(stat, year, res => {
-            this.setState({
-                playerStats: res
-            })
-        }))
-    };
-
-    selectStat = (stat) => {
-        this.setState({stat}, this.updateStats)
-    };
-
-    selectYear = (year) => {
-        this.setState({year}, this.updateStats)
-    };
 
     render() {
         const {stat, year, playerStats} = this.state;

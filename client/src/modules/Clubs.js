@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import {Button, InputGroup, Input, Table, Container, Row, Col} from "reactstrap";
+import {Button, Col, Container, Input, InputGroup, Row, Table} from "reactstrap";
 import Client from "../Client";
 import ClubModal from "../components/ClubModal";
 import ToggleDisplay from "react-toggle-display";
@@ -8,28 +8,11 @@ const MATCHING_CLUB_LIMIT = 25;
 
 class Clubs extends Component {
 
-    constructor() {
-        super();
-
-        this.state = {
-            searchText: "",
-            activeSearchText: "",
-
-            displaySearchMessage: false,
-            displayClubs: false,
-            clubs: [],
-            isClubSearching: false,
-
-            activeClub: null
-        };
-    }
-
     handleTextChange = (event) => {
         this.setState({
             searchText: event.target.value
         });
     };
-
     handleSearch = () => {
         const club_name = this.state.searchText;
 
@@ -58,18 +41,32 @@ class Clubs extends Component {
             });
         }
     };
-
     _handleKeyPress = (event) => {
         if (event.key === 'Enter') {
             this.handleSearch();
         }
     };
-
     setActiveClub = (club) => {
         this.setState({
             activeClub: club
         });
     };
+
+    constructor() {
+        super();
+
+        this.state = {
+            searchText: "",
+            activeSearchText: "",
+
+            displaySearchMessage: false,
+            displayClubs: false,
+            clubs: [],
+            isClubSearching: false,
+
+            activeClub: null
+        };
+    }
 
     render() {
         const {clubs, activeClub} = this.state;

@@ -1,16 +1,16 @@
 import React, {Component} from "react";
 import Client from "../Client";
 import {
-    TabContent,
-    TabPane,
-    NavLink,
-    Nav,
-    NavItem,
     Button,
     Modal,
     ModalBody,
+    ModalFooter,
     ModalHeader,
-    ModalFooter
+    Nav,
+    NavItem,
+    NavLink,
+    TabContent,
+    TabPane
 } from "reactstrap";
 import {find_club_by_id} from "../util/ClubFunctions";
 import MatchLineupTable from "./MatchLineupTable";
@@ -39,6 +39,44 @@ const sortByPosition = (p1, p2) => {
 };
 
 export default class MatchStatModal extends Component {
+    closeModal = () => {
+        this.setState({
+            isOpen: false,
+            home_lineup: [],
+            away_lineup: [],
+            matchStats: [],
+            activeTab: '1'
+        });
+        this.props.handler(false);
+    };
+    toggleTab = (tab) => {
+        if (this.state.activeTab !== tab) {
+            this.setState({
+                activeTab: tab
+            });
+        }
+    };
+    getHeaderText = () => {
+        const {match} = this.props;
+
+        if (match) {
+            return `${match.league} - ${match.venue} (${match.date_of_game})`;
+        }
+        return "";
+    };
+    getScoreHeader = () => {
+        const {match} = this.props;
+
+        if (match) {
+            const home_team = find_club_by_id(match.home_team_id);
+            const away_team = find_club_by_id(match.away_team_id);
+
+            return (<h3 className="text-center">{home_team.name} {match.home_team_score}
+                - {match.away_team_score} {away_team.name}</h3>);
+        }
+        return "";
+    };
+
     constructor(props) {
         super(props);
 
@@ -59,9 +97,9 @@ export default class MatchStatModal extends Component {
 
         if (match) {
             Client.match_lineup(match.match_id, (lineups) => {
-                var home_lineup = [], away_lineup = [];
+                let home_lineup = [], away_lineup = [];
 
-                for (var i = 0; i < lineups.length; i++) {
+                for (let i = 0; i < lineups.length; i++) {
                     const entry = lineups[i];
 
                     if (entry.club_id === match.home_team_id) {
@@ -87,47 +125,6 @@ export default class MatchStatModal extends Component {
             });
         }
     }
-
-    closeModal = () => {
-        this.setState({
-            isOpen: false,
-            home_lineup: [],
-            away_lineup: [],
-            matchStats: [],
-            activeTab: '1'
-        });
-        this.props.handler(false);
-    };
-
-    toggleTab = (tab) => {
-        if (this.state.activeTab !== tab) {
-            this.setState({
-                activeTab: tab
-            });
-        }
-    };
-
-    getHeaderText = () => {
-        const {match} = this.props;
-
-        if (match) {
-            return `${match.league} - ${match.venue} (${match.date_of_game})`;
-        }
-        return "";
-    };
-
-    getScoreHeader = () => {
-        const {match} = this.props;
-
-        if (match) {
-            const home_team = find_club_by_id(match.home_team_id);
-            const away_team = find_club_by_id(match.away_team_id);
-
-            return (<h3 className="text-center">{home_team.name} {match.home_team_score}
-                - {match.away_team_score} {away_team.name}</h3>);
-        }
-        return "";
-    };
 
     render() {
         const header = this.getHeaderText();

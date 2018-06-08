@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import {TabContent, TabPane, NavLink, Nav, NavItem} from "reactstrap";
+import {Nav, NavItem, NavLink, TabContent, TabPane} from "reactstrap";
 import {find_club_by_id} from "../util/ClubFunctions";
 
 const PLAYER_STATS = [
@@ -26,14 +26,6 @@ const PLAYER_STATS = [
 
 export default class MatchPlayerStats extends Component {
 
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            tab: '1'
-        }
-    }
-
     toggle = (tab) => {
         if (this.state.tab !== tab) {
             this.setState({
@@ -41,7 +33,6 @@ export default class MatchPlayerStats extends Component {
             });
         }
     };
-
     getPlayerStatRows = (player) => {
         var player_stats = [];
 
@@ -53,7 +44,6 @@ export default class MatchPlayerStats extends Component {
         );
         return player_stats;
     };
-
     getLineupStats = (key_prefix, lineup) => {
         var stat_rows = [];
         for (var i = 0; i < lineup.length; i++) {
@@ -109,6 +99,14 @@ export default class MatchPlayerStats extends Component {
         </div>);
     };
 
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            tab: '1'
+        }
+    }
+
     render() {
         const {tab} = this.state;
         const {match, home_lineup, away_lineup} = this.props;
@@ -146,6 +144,6 @@ export default class MatchPlayerStats extends Component {
             );
         }
 
-        return (<div></div>);
+        return "";
     }
 }

@@ -14,9 +14,9 @@ import Clubs from "./modules/Clubs";
 import Matches from "./modules/Matches";
 import Players from "./modules/Players";
 import Predictions from "./modules/Predictions";
-import {BrowserRouter, Redirect, Route, Link, Switch} from "react-router-dom";
+import {BrowserRouter, Link, Redirect, Route, Switch} from "react-router-dom";
 import registerServiceWorker from "./registerServiceWorker";
-import {Container, Navbar, NavbarBrand, Nav, NavLink, NavItem, Jumbotron} from "reactstrap";
+import {Container, Jumbotron, Nav, Navbar, NavbarBrand, NavItem, NavLink} from "reactstrap";
 
 const Header = () => (
     <div>

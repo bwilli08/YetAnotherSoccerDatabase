@@ -1,9 +1,25 @@
 import React, {Component} from "react";
 import Client from "../Client";
-import {Button, Modal, ModalBody, ModalHeader, ModalFooter} from "reactstrap";
+import {Button, Modal, ModalBody, ModalFooter, ModalHeader} from "reactstrap";
 import "react-select/dist/react-select.css";
 
 export default class PlayerModal extends Component {
+    closeModal = () => {
+        this.setState({
+            isOpen: false,
+            stats: []
+        });
+        this.props.handler(false);
+    };
+    getHeaderText = () => {
+        const {player} = this.props;
+
+        if (player) {
+            return `${player.player_nickname} (${player.player_name})`;
+        }
+        return "";
+    };
+
     constructor(props) {
         super(props);
 
@@ -26,30 +42,13 @@ export default class PlayerModal extends Component {
         }
     }
 
-    closeModal = () => {
-        this.setState({
-            isOpen: false,
-            stats: []
-        });
-        this.props.handler(false);
-    };
-
-    getHeaderText = () => {
-        const {player} = this.props;
-
-        if (player) {
-            return `${player.player_nickname} (${player.player_name})`;
-        }
-        return "";
-    };
-
     render() {
         const {stats} = this.state;
 
         const header = this.getHeaderText();
 
         const statRows = stats.map((stat, idx) => {
-            var minutes = stat.minutes;
+            let minutes = stat.minutes;
             if (stat.apps > 0 && minutes === 0) {
                 minutes = "N/A";
             }

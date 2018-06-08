@@ -12,7 +12,7 @@ export default class MatchLineupTable extends Component {
             const max_size = Math.max(home_lineup.length, away_lineup.length);
 
             const lineup_rows = [];
-            for (var i = 0; i < max_size; i++) {
+            for (let i = 0; i < max_size; i++) {
                 const home_player = i < home_lineup.length ? home_lineup[i] : {"name": "", "position": ""};
                 const away_player = i < away_lineup.length ? away_lineup[i] : {"name": "", "position": ""};
 
@@ -41,7 +41,7 @@ export default class MatchLineupTable extends Component {
             );
         }
 
-        return (<div></div>);
+        return "";
     }
 
 }

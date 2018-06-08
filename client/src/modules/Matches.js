@@ -1,5 +1,5 @@
 import React, {Component} from "react";
-import {Button, Table, Container, Row, Col, DropdownItem} from "reactstrap";
+import {Button, Col, Container, DropdownItem, Row, Table} from "reactstrap";
 import "react-select/dist/react-select.css";
 import "react-virtualized/styles.css";
 import "react-virtualized-select/styles.css";
@@ -10,31 +10,16 @@ import MatchStatModal from "../components/MatchStatModal";
 import Client from "../Client";
 
 export default class Matches extends Component {
-    constructor() {
-        super();
-
-        this.state = {
-            rSelected: 1,
-            club1: null,
-            club2: null,
-            matches: [],
-            displayMatches: false,
-            activeMatch: null
-        };
-    }
-
     displayMatchStats = (match) => {
         this.setState({
             activeMatch: match
         });
     };
-
     closeMatchStats = () => {
         this.setState({
             activeMatch: null
         })
     };
-
     selectOption = (selectedOption, selectFunc) => {
         const nextRSelected = this.state.rSelected === 1 ? 2 : 1;
         const stateAttribute = this.state.rSelected === 1 ? "club1" : "club2";
@@ -44,11 +29,9 @@ export default class Matches extends Component {
             [stateAttribute]: selectedOption
         }, () => selectFunc(selectedOption));
     };
-
     filterOption = (option, inputString) => {
         return option.name.toLowerCase().includes(inputString.toLowerCase());
     };
-
     renderOption = ({key, style, option, selectValue}) => {
         const {name} = option;
 
@@ -58,13 +41,11 @@ export default class Matches extends Component {
             </DropdownItem>
         );
     };
-
     onRadioButtonClick = (target) => {
         this.setState({
             rSelected: target
         });
     };
-
     handleSearch = () => {
         const {club1, club2} = this.state;
 
@@ -78,7 +59,6 @@ export default class Matches extends Component {
                 });
             });
     };
-
     hardReset = () => {
         this.setState({
             rSelected: 1,
@@ -89,6 +69,19 @@ export default class Matches extends Component {
             activeMatch: null
         });
     };
+
+    constructor() {
+        super();
+
+        this.state = {
+            rSelected: 1,
+            club1: null,
+            club2: null,
+            matches: [],
+            displayMatches: false,
+            activeMatch: null
+        };
+    }
 
     render() {
         const {matches, activeMatch} = this.state;

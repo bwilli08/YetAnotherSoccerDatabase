@@ -29,7 +29,7 @@ export default class MatchStatTable extends Component {
             const home_stats = matchStats.filter(stat => stat.club_id === home_team.id)[0];
             const away_stats = matchStats.filter(stat => stat.club_id === away_team.id)[0];
 
-            var statRows = [];
+            let statRows = [];
 
             TEAM_STATS.forEach(stat => {
                     const key = "match-" + stat[0];
@@ -59,6 +59,6 @@ export default class MatchStatTable extends Component {
             );
         }
 
-        return (<div></div>);
+        return "";
     };
 }

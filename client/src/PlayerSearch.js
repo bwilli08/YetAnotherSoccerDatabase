@@ -1,16 +1,51 @@
 import React from "react";
 import {
     Button,
-    InputGroup,
-    InputGroupButtonDropdown,
-    Input,
-    DropdownToggle,
+    DropdownItem,
     DropdownMenu,
-    DropdownItem
+    DropdownToggle,
+    Input,
+    InputGroup,
+    InputGroupButtonDropdown
 } from "reactstrap";
 import {withRouter} from "react-router-dom";
 
 class PlayerSearch extends React.Component {
+    handleTextChange = (event) => {
+        this.setState({
+            name: event.target.value,
+            isTyping: false
+        });
+    };
+    handleSearch = () => {
+        if (this.state.searchFor && this.state.name.length > 3) {
+            this.props.history.push({
+                pathname: this.state.searchFor,
+                search: `?name=${this.state.name}`,
+                state: {
+                    name: this.state.name
+                }
+            });
+        }
+    };
+    _handleKeyPress = (event) => {
+        if (event.key === 'Enter') {
+            this.handleSearch();
+        }
+    };
+    setClub = () => {
+        this.setState({
+            dropdownText: "Club Search",
+            searchFor: "/clubs"
+        });
+    };
+    setPlayer = () => {
+        this.setState({
+            dropdownText: "Player Search",
+            searchFor: "/players"
+        });
+    };
+
     constructor(props) {
         super(props);
 
@@ -29,45 +64,6 @@ class PlayerSearch extends React.Component {
             dropdownOpen: !this.state.dropdownOpen
         });
     }
-
-    handleTextChange = (event) => {
-        this.setState({
-            name: event.target.value,
-            isTyping: false
-        });
-    };
-
-    handleSearch = () => {
-        if (this.state.searchFor && this.state.name.length > 3) {
-            this.props.history.push({
-                pathname: this.state.searchFor,
-                search: `?name=${this.state.name}`,
-                state: {
-                    name: this.state.name
-                }
-            });
-        }
-    };
-
-    _handleKeyPress = (event) => {
-        if (event.key === 'Enter') {
-            this.handleSearch();
-        }
-    };
-
-    setClub = () => {
-        this.setState({
-            dropdownText: "Club Search",
-            searchFor: "/clubs"
-        });
-    };
-
-    setPlayer = () => {
-        this.setState({
-            dropdownText: "Player Search",
-            searchFor: "/players"
-        });
-    };
 
     render() {
         return (

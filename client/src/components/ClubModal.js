@@ -1,9 +1,25 @@
 import React, {Component} from "react";
 import Client from "../Client";
-import {Button, Modal, ModalBody, ModalHeader, ModalFooter} from "reactstrap";
+import {Button, Modal, ModalBody, ModalFooter, ModalHeader} from "reactstrap";
 import "react-select/dist/react-select.css";
 
 export default class ClubModal extends Component {
+    closeModal = () => {
+        this.setState({
+            isOpen: false,
+            seasons: []
+        });
+        this.props.handler(false);
+    };
+    getHeaderText = () => {
+        const {club} = this.props;
+
+        if (club) {
+            return `${club.club_name} (${club.country_name})`;
+        }
+        return "";
+    };
+
     constructor(props) {
         super(props);
 
@@ -25,23 +41,6 @@ export default class ClubModal extends Component {
             });
         }
     }
-
-    closeModal = () => {
-        this.setState({
-            isOpen: false,
-            seasons: []
-        });
-        this.props.handler(false);
-    };
-
-    getHeaderText = () => {
-        const {club} = this.props;
-
-        if (club) {
-            return `${club.club_name} (${club.country_name})`;
-        }
-        return "";
-    };
 
     render() {
         const {club} = this.props;

@@ -4,6 +4,41 @@ import Client from "../Client";
 
 export default class Top10Tables extends Component {
 
+    getTable = (variable, isPlayer, dataName, header) => {
+        const data = this.state[variable];
+        const isLoading = this.state[variable.replace("data", "loading")];
+
+        if (isLoading) {
+            return (<h5>Loading table...</h5>);
+        }
+
+        const dataRows = data.map((data, idx) => (
+            <tr key={idx}>
+                <td className="right aligned">{isPlayer ? data.name : data.club}</td>
+                <td className="right aligned">{isPlayer ? data.nationality : data.country}</td>
+                <td className="right aligned">{data.total}</td>
+            </tr>
+        ));
+
+        return (
+            <div>
+                <h5>{header}</h5>
+                <table className="table table-striped table-bordered table-sm">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>{isPlayer ? "Nationality" : "League"}</th>
+                        <th>{dataName}</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {dataRows}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
     constructor(props) {
         super(props);
 
@@ -58,41 +93,6 @@ export default class Top10Tables extends Component {
             });
         }
     }
-
-    getTable = (variable, isPlayer, dataName, header) => {
-        const data = this.state[variable];
-        const isLoading = this.state[variable.replace("data", "loading")];
-
-        if (isLoading) {
-            return (<h5>Loading table...</h5>);
-        }
-
-        const dataRows = data.map((data, idx) => (
-            <tr key={idx}>
-                <td className="right aligned">{isPlayer ? data.name : data.club}</td>
-                <td className="right aligned">{isPlayer ? data.nationality : data.country}</td>
-                <td className="right aligned">{data.total}</td>
-            </tr>
-        ));
-
-        return (
-            <div>
-                <h5>{header}</h5>
-                <table className="table table-striped table-bordered table-sm">
-                    <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>{isPlayer ? "Nationality" : "League"}</th>
-                        <th>{dataName}</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {dataRows}
-                    </tbody>
-                </table>
-            </div>
-        );
-    };
 
     render() {
         const {type, order} = this.props;

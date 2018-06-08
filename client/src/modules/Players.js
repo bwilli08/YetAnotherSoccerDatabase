@@ -1,15 +1,15 @@
 import React, {Component} from "react";
 import {
+    Button,
+    Col,
+    Container,
     DropdownItem,
     DropdownMenu,
     DropdownToggle,
-    Button,
-    InputGroup,
     Input,
-    Table,
-    Container,
+    InputGroup,
     Row,
-    Col,
+    Table,
     UncontrolledDropdown
 } from "reactstrap";
 import PlayerModal from "../components/PlayerModal";
@@ -23,27 +23,11 @@ const POSITIONS = [DEFAULT_POSITION, "Defender", "Midfielder", "Attacker"];
 
 class Players extends Component {
 
-    constructor() {
-        super();
-
-        this.state = {
-            activeSearchText: "",
-            activeSearchPosition: "",
-            displaySearchMessage: false,
-            searchText: "",
-            displayPlayers: false,
-            players: [],
-            isPlayerSearching: false,
-            position: DEFAULT_POSITION,
-        };
-    }
-
     handleTextChange = (event) => {
         this.setState({
             searchText: event.target.value
         });
     };
-
     handleSearch = () => {
         const player_name = this.state.searchText;
         const position = this.state.position;
@@ -73,24 +57,36 @@ class Players extends Component {
             });
         }
     };
-
     _handleKeyPress = (event) => {
         if (event.key === 'Enter') {
             this.handleSearch();
         }
     };
-
     setActivePlayer = (player) => {
         this.setState({
             activePlayer: player
         })
     };
-
     selectPosition = (event) => {
         this.setState({
             position: event.target.value
         });
     };
+
+    constructor() {
+        super();
+
+        this.state = {
+            activeSearchText: "",
+            activeSearchPosition: "",
+            displaySearchMessage: false,
+            searchText: "",
+            displayPlayers: false,
+            players: [],
+            isPlayerSearching: false,
+            position: DEFAULT_POSITION,
+        };
+    }
 
     render() {
         const {players, activePlayer} = this.state;

@@ -28,29 +28,6 @@ const POSITION_LIMITS = {
 };
 
 export default class LineupPicker extends Component {
-    constructor(props) {
-        super(props);
-
-        this.state = {
-            selectedClub: null,
-            availablePlayers: [],
-            selectedPlayers: [],
-            isValidLineup: false
-        };
-    }
-
-    componentWillReceiveProps(nextProps) {
-        const {clubs} = nextProps;
-
-        if (clubs !== this.props.clubs) {
-            this.updateState({
-                selectedClub: null,
-                availablePlayers: [],
-                selectedPlayers: []
-            });
-        }
-    }
-
     updateState = (newState) => {
         this.setState(newState, () => {
             const {selectedPlayers} = this.state;
@@ -79,7 +56,6 @@ export default class LineupPicker extends Component {
             })
         })
     };
-
     selectOption = (selectedOption, selectFunc) => {
         const {activeSeason} = this.props;
 
@@ -96,11 +72,9 @@ export default class LineupPicker extends Component {
             selectFunc(selectedOption);
         }
     };
-
     filterOption = (option, inputString) => {
         return option.name.toLowerCase().includes(inputString.toLowerCase());
     };
-
     renderOption = ({key, style, option, selectValue}) => {
         const {name} = option;
 
@@ -110,7 +84,6 @@ export default class LineupPicker extends Component {
             </DropdownItem>
         );
     };
-
     togglePlayer = (player) => {
         const {selectedPlayers} = this.state;
         const isSelectedPlayer = selectedPlayers.includes(player);
@@ -126,7 +99,6 @@ export default class LineupPicker extends Component {
             selectedPlayers: newSelectedPlayers
         });
     };
-
     getButtonForPlayer = (player) => {
         const {selectedPlayers} = this.state;
 
@@ -150,7 +122,6 @@ export default class LineupPicker extends Component {
             </Button>
         );
     };
-
     playerItem = (player, idx) => {
         return (
             <tr key={idx}>
@@ -163,7 +134,6 @@ export default class LineupPicker extends Component {
             </tr>
         );
     };
-
     isValidLineupMessage = () => {
         const {selectedPlayers} = this.state;
 
@@ -187,6 +157,29 @@ export default class LineupPicker extends Component {
 
         return [];
     };
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            selectedClub: null,
+            availablePlayers: [],
+            selectedPlayers: [],
+            isValidLineup: false
+        };
+    }
+
+    componentWillReceiveProps(nextProps) {
+        const {clubs} = nextProps;
+
+        if (clubs !== this.props.clubs) {
+            this.updateState({
+                selectedClub: null,
+                availablePlayers: [],
+                selectedPlayers: []
+            });
+        }
+    }
 
     render() {
         const {placeholder, clubs} = this.props;
