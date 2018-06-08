@@ -44,6 +44,9 @@ The Relation Schema, modelled as the MySQL create table statements, can be viewe
 1. Run `scripts/sports_monks.py`, then run `scripts/populate_club_season_stats.sql`.
     * This will take approximately a day, as Sports Monks limits their accounts to 1500 requests/hour.
 
+#### Setup Neural Network Data
+1. Run `scripts/NeuralNetworkTraining.py`. This is necessary to run the match predictions.
+
 #### Start the Backend Server
 1. Install dependencies: `npm install`
 1. Create a file in the `internal/` folder named `database-info.js`.

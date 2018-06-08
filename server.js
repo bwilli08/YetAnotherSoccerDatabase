@@ -503,7 +503,7 @@ app.get("/predict", (req, res) => {
     const away_club_id = req.query.away_club_id;
     const away_players = req.query.away_players;
 
-    const proc = spawn('python3', ["prediction-script.py", season_id, home_club_id, home_players, away_club_id, away_players]);
+    const proc = spawn('python3', ["scripts/prediction-script.py", season_id, home_club_id, home_players, away_club_id, away_players]);
 
     let result;
 

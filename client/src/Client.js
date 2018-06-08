@@ -75,10 +75,6 @@ function overview_search(type, stat, order, year, cb) {
     return json_query(qry, cb);
 }
 
-function seasons(cb) {
-    return json_query("/seasons", cb);
-}
-
 function player_graph_data(stat, year, cb) {
     return json_query(`/get/player-stats?stat=${stat}&year=${year}`, cb);
 }
@@ -152,7 +148,6 @@ const Client = {
     player_search,
     stat_search,
     club_search_with_name,
-    seasons,
     player_graph_data,
     season_lineup,
     get_seasons,

@@ -1,9 +1,6 @@
 ## Next Time
-* Update LineupPicker component:
-  * Display each players stats for that season to give the user some idea of which players are best (?)
 * Update Prediction page:
   * Make the prediction outcome look prettier.
-* Make footer with actual information and a colored background.
 
 * For Neural Network:
   * Keep data for training and testing

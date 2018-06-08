@@ -14,7 +14,8 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 
-sys.path.insert(0, './internal')
+# See the README file for what the databaseinfo.py file should contain.
+sys.path.insert(0, '../internal')
 import databaseinfo
 
 engine = create_engine('mysql+mysqlconnector://{}:{}@{}/{}'.format(
@@ -23,11 +24,15 @@ engine = create_engine('mysql+mysqlconnector://{}:{}@{}/{}'.format(
     databaseinfo.db_host(),
     databaseinfo.db_name()))
 
+# Extract the training data and split it into input, outcome result, and score result
 training_data = pd.read_sql("SELECT * FROM neuralnetworktraining", engine)
 X = np.array([list(x) for x in training_data.loc[:, 'home_win_total':'away_crosses_total'].values])
 outcome_Y = np.array(training_data['Result'].values)
 score_Y = training_data[['Home_Result', 'Away_Result']]
 
+#####
+# Extraction of club statistics for a given season and club.
+#####
 club_attributes = [
     "win_total",
     "draw_total",
@@ -55,6 +60,13 @@ def getSeasonStatsForClub(season_id, club_id):
 
     return output
 
+#####
+# End Club Stat Extraction
+#####
+
+#####
+# Extraction of a lineups statistics for a given season, club, and list of players
+#####
 player_attributes = [
     "minutes_played",
     "appearances",
@@ -100,6 +112,12 @@ def getSeasonStatsForLineup(season_id, club_id, player_ids):
 
     return output
 
+#####
+# End Lineup Stat Extraction
+#####
+
+# Utility method to generate the correct neural network input for a given call.
+# Output format: [home_club_stats] + [home_lineup_stats] + [away_club_stats] + [away_lineup_stats]
 def getNeuralNetworkInput(season_id, home_club_id, home_player_ids, away_club_id, away_player_ids):
     nn_input = getSeasonStatsForClub(season_id, home_club_id)
     nn_input = nn_input + getSeasonStatsForLineup(season_id, home_club_id, home_player_ids)
@@ -107,6 +125,9 @@ def getNeuralNetworkInput(season_id, home_club_id, home_player_ids, away_club_id
     nn_input = nn_input + getSeasonStatsForLineup(season_id, away_club_id, away_player_ids)
     return nn_input
 
+# Predicts the likelihood that each possible output occurs.
+#
+# Output: list of probabilities
 def getProbabilities(X, Y, nn_input):
     predictions = []
 
@@ -122,13 +143,13 @@ def getProbabilities(X, Y, nn_input):
         model.fit(X_std, Y)
         return model.predict_proba(nn_input_std)[0]
 
-
-def getOutcomeProbabilities(X, Y, nn_input):
-    return getProbabilities(X, Y, nn_input)
-
+# Predicts the score probabilities for both the home and away team,
+# then determines the most likely scoreline given those probabilities.
+#
+# Output: [(home_score, away_score), likelihood]
 def getMostProbableScore(X, Y, nn_input):
-    home_probas = getOutcomeProbabilities(X, np.array(Y['Home_Result'].values), nn_input)
-    away_probas = getOutcomeProbabilities(X, np.array(Y['Away_Result'].values), nn_input)
+    home_probas = getProbabilities(X, np.array(Y['Home_Result'].values), nn_input)
+    away_probas = getProbabilities(X, np.array(Y['Away_Result'].values), nn_input)
 
     probability = [[], [], [], [], [], []]
 
@@ -141,11 +162,19 @@ def getMostProbableScore(X, Y, nn_input):
     result.append(float("{:.2f}".format(np.max(matrix, axis=None) * 100)))
     return result
 
+# Parses a comma-delimited list and returns the list of values
 def parseListArg(arg):
     arr = arg.replace('[', '').replace(']', '').split(',')
 
     return [int(x) for x in arr]
 
+# Input for a given prediction call:
+#     argv[0] - ./prediction-script.py
+#     argv[1] - season id
+#     argv[2] - home club id
+#     argv[3] - comma-delimited list of player ids
+#     argv[4] - away club id)
+#     argv[5] - comma-delimited list of player ids
 season_id = int(sys.argv[1])
 home_club_id = int(sys.argv[2])
 home_players = parseListArg(sys.argv[3])
@@ -155,8 +184,13 @@ away_players = parseListArg(sys.argv[5])
 nn_input = getNeuralNetworkInput(season_id, home_club_id, home_players, away_club_id, away_players)
 
 # Convert to list and round decimals
-outcome_probs = getOutcomeProbabilities(X, outcome_Y, nn_input)
+#
+# Output: [home_win_probability, draw_probability, away_win_probability]
+outcome_probs = getProbabilities(X, outcome_Y, nn_input)
 print(list(map((lambda x: float("{:.2f}".format(x * 100))), outcome_probs)))
 
+# Determines most likely scoreline.
+#
+# Output: [(home_goals, away_goals), probability]
 likely_score = getMostProbableScore(X, score_Y, nn_input)
 print(likely_score)
