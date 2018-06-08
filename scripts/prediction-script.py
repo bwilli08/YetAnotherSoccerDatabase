@@ -15,7 +15,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import cross_val_score
 
 # See the README file for what the databaseinfo.py file should contain.
-sys.path.insert(0, '../internal')
+sys.path.insert(0, './internal')
 import databaseinfo
 
 engine = create_engine('mysql+mysqlconnector://{}:{}@{}/{}'.format(
